@@ -17,6 +17,11 @@ import { supabase } from '@/lib/supabase';
 
 type ArahFilter = 'ALL' | 'ACCUM' | 'DISTRIB';
 
+interface PhoenixFlowPanelProps {
+  /** Jika diisi, tombol "Analisa →" di tiap card akan memanggil callback ini */
+  onAnalyze?: (ticker: string) => void;
+}
+
 const TABS: { label: string; value: ArahFilter }[] = [
   { label: 'Semua',      value: 'ALL'     },
   { label: '⬆ Akumulasi', value: 'ACCUM'  },
@@ -29,7 +34,7 @@ function today(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export default function PhoenixFlowPanel() {
+export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = {}) {
   const [data,      setData]      = useState<BandarFlow[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
@@ -231,7 +236,11 @@ export default function PhoenixFlowPanel() {
       ) : (
         <div className="pf-grid">
           {filtered.map((item) => (
-            <BandarAccumCard key={`${item.ticker}-${item.trade_date}`} data={item} />
+            <BandarAccumCard
+              key={`${item.ticker}-${item.trade_date}`}
+              data={item}
+              onAnalyze={onAnalyze}
+            />
           ))}
         </div>
       )}

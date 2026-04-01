@@ -9,6 +9,7 @@ import AgentStoryCard from './AgentStoryCard';
 import PriceGraph from './PriceGraph';
 import BrokerFlowCard from './BrokerFlowCard';
 import EmitenHistoryCard from './EmitenHistoryCard';
+import BandarFlowSection from './BandarFlowSection';
 
 import * as htmlToImage from 'html-to-image';
 import type { StockInput, StockAnalysisResult, KeyStatsData, AgentStoryResult } from '@/lib/types';
@@ -453,6 +454,9 @@ export default function Calculator({ selectedStock }: CalculatorProps) {
                 <BrokerFlowCard emiten={result.input.emiten} />
               </div>
             </div>
+
+            {/* Phoenix Flow Section - Full Width */}
+            <BandarFlowSection ticker={result.input.emiten} />
 
             {/* Agent Story Section - Full Width */}
             <div style={{ gridColumn: '1 / -1', width: '100%' }}>

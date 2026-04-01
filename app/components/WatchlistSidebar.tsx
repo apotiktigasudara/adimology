@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import type { WatchlistItem, WatchlistGroup } from '@/lib/types';
 import { CheckCircle2, XCircle, MinusCircle, Search, Filter, X, RefreshCw } from 'lucide-react';
+import SignalFeed from './SignalFeed';
 
 interface WatchlistSidebarProps {
   onSelect?: (symbol: string) => void;
@@ -477,6 +478,9 @@ export default function WatchlistSidebar({ onSelect }: WatchlistSidebarProps) {
           </div>
         )}
       </div>
+
+      {/* Signal Feed — Phoenix Bot realtime alerts */}
+      <SignalFeed onSelect={onSelect} />
 
       {/* Loading indicator when switching groups */}
       {/* Syncing indicator moved to Navbar */}

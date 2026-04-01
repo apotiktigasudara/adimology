@@ -7,7 +7,7 @@
  * Import CSS di sini supaya hanya dimuat untuk halaman ini.
  */
 
-import PhoenixFlowPanel from '@/app/components/PhoenixFlowPanel';
+import FlowPageClient from '@/app/components/FlowPageClient';
 import '@/styles/bandar-flow.css';
 
 export const metadata = {
@@ -25,7 +25,7 @@ export default function FlowPage() {
         </span>
       </div>
 
-      <PhoenixFlowPanel />
+      <FlowPageClient />
     </div>
   );
 }
