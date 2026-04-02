@@ -2398,3 +2398,36 @@ body.modal-open .app-layout {
   transition: filter 0.3s ease;
   pointer-events: none;
 }
+
+/* ── Navbar Dropdown ─────────────────────────────────────────────────────── */
+.nav-dropdown-wrapper { position: relative; }
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.4rem;
+  min-width: 180px;
+  z-index: 999;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.nav-dropdown-wrapper:hover .nav-dropdown { display: flex; }
+.nav-dropdown-item {
+  display: block;
+  padding: 0.45rem 0.75rem;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.nav-dropdown-item:hover {
+  background: rgba(255,255,255,0.07);
+  color: var(--text-primary);
+}

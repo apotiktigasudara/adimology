@@ -96,20 +96,28 @@ const Navbar = () => {
             >
               Flow
             </Link>
-            <Link
-              href="/triggers"
-              style={{
-                textDecoration: 'none',
-                color: pathname === '/triggers' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: pathname === '/triggers' ? 600 : 400,
-                fontSize: '0.9rem',
-                borderBottom: pathname === '/triggers' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                paddingBottom: '2px',
-                transition: 'all 0.2s'
-              }}
-            >
-              Triggers
-            </Link>
+            <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
+              <Link
+                href="/triggers"
+                style={{
+                  textDecoration: 'none',
+                  color: pathname.startsWith('/triggers') ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: pathname.startsWith('/triggers') ? 600 : 400,
+                  fontSize: '0.9rem',
+                  borderBottom: pathname.startsWith('/triggers') ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                  paddingBottom: '2px',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Triggers ▾
+              </Link>
+              <div className="nav-dropdown">
+                <Link href="/triggers" className="nav-dropdown-item">📡 Signal Feed</Link>
+                <Link href="/triggers/smkalkulator" className="nav-dropdown-item">💰 SM Kalkulator</Link>
+                <Link href="/triggers/mfkalkulator" className="nav-dropdown-item">📊 MF Kalkulator</Link>
+                <Link href="/triggers/algo" className="nav-dropdown-item">🤖 Algo Signals</Link>
+              </div>
+            </div>
             <a
               href="https://github.com/bhaktiutama/adimology" 
               target="_blank" 

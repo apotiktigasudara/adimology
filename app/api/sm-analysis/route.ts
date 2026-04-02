@@ -7,19 +7,21 @@ const supabase = createClient(
 );
 
 /**
- * SM Analysis API
- * Menghitung akumulasi/distribusi Smart Money per ticker dari data V4 Supabase.
+ * SM/MF Analysis API
  *
- * GET /api/sm-analysis?days=30
- *   → Ranking semua ticker: siapa yang paling banyak di-akumulasi vs di-buang
+ * source=SM  → hanya sm_daily (Trigger SM + Big SM) vs bm_daily (Bad Money)
+ * source=MF  → hanya mfp_daily (Live MF+ + Big MF+) vs mfn_daily (Live MF-)
+ * source=ALL → gabungan SM + MF (default)
  *
- * GET /api/sm-analysis?ticker=BBRI&days=30
- *   → Detail SM flow + MF +/- untuk satu ticker
+ * GET /api/sm-analysis?source=SM&days=30          → ranking SM vs Bad Money
+ * GET /api/sm-analysis?source=MF&days=30          → ranking MF+ vs MF-
+ * GET /api/sm-analysis?source=SM&ticker=BBRI      → detail SM ticker
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const ticker = searchParams.get('ticker')?.toUpperCase();
   const days   = Math.min(parseInt(searchParams.get('days') || '30'), 90);
+  const source = (searchParams.get('source') || 'ALL').toUpperCase(); // SM | MF | ALL
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - days);
   const fromISO = fromDate.toISOString();
@@ -53,13 +55,11 @@ export async function GET(request: NextRequest) {
       const smRows  = smRes.data      || [];
       const oracle  = oracleRes.data  || [];
 
-      // Hitung summary SM vs BM dari alerts
-      const accumAlerts = alerts.filter(a => a.arah === 'ACCUM');
-      const distribAlerts = alerts.filter(a => a.arah === 'DISTRIB');
-      const smTriggers    = alerts.filter(a => ['SM','BIG_SM'].includes(a.trigger_type) && a.arah === 'ACCUM');
-      const badMoney      = alerts.filter(a => a.trigger_type === 'BAD_MONEY' || a.arah === 'DISTRIB');
-      const mfPlus        = alerts.filter(a => ['MF_PLUS','BIG_MF_PLUS'].includes(a.trigger_type));
-      const mfMinus       = alerts.filter(a => ['MF_MINUS','BIG_MF_MINUS'].includes(a.trigger_type));
+      // Alert counts by type
+      const smTriggers  = alerts.filter(a => ['SM','BIG_SM'].includes(a.trigger_type) && a.arah === 'ACCUM');
+      const badMoney    = alerts.filter(a => a.trigger_type === 'BAD_MONEY');
+      const mfPlus      = alerts.filter(a => ['MF_PLUS','BIG_MF_PLUS'].includes(a.trigger_type));
+      const mfMinus     = alerts.filter(a => ['MF_MINUS','BIG_MF_MINUS'].includes(a.trigger_type));
 
       // SM rolling totals
       const totalSmDaily  = smRows.reduce((s, r) => s + (r.sm_daily  || 0), 0);
@@ -69,41 +69,48 @@ export async function GET(request: NextRequest) {
       const latestSm10d   = smRows.length > 0 ? smRows[smRows.length - 1]?.sm_10d  : null;
       const latestSm30d   = smRows.length > 0 ? smRows[smRows.length - 1]?.sm_30d  : null;
 
-      // Net SM flow: positif = akumulasi, negatif = distribusi
+      // Net flow per source
       const netSM = totalSmDaily - totalBmDaily;
       const netMF = totalMfPlus  - totalMfMinus;
-      const verdict = netSM + netMF > 0 ? 'AKUMULASI' : netSM + netMF < 0 ? 'DISTRIBUSI' : 'NETRAL';
+
+      // Verdict tergantung source
+      let netScore = 0;
+      if (source === 'SM')      netScore = netSM;
+      else if (source === 'MF') netScore = netMF;
+      else                      netScore = netSM + netMF;
+      const verdict = netScore > 0 ? 'AKUMULASI' : netScore < 0 ? 'DISTRIBUSI' : 'NETRAL';
 
       return NextResponse.json({
         success: true,
-        ticker,
-        days,
-        verdict,
+        ticker, days, source, verdict,
         summary: {
-          net_sm:        netSM,
-          net_mf:        netMF,
-          total_sm_lots: totalSmDaily,
-          total_bm_lots: totalBmDaily,
-          total_mf_plus: totalMfPlus,
-          total_mf_minus: totalMfMinus,
-          sm_10d:        latestSm10d,
-          sm_30d:        latestSm30d,
-          accum_alerts:  accumAlerts.length,
-          distrib_alerts: distribAlerts.length,
-          sm_triggers:   smTriggers.length,
-          bad_money:     badMoney.length,
-          mf_plus_hits:  mfPlus.length,
-          mf_minus_hits: mfMinus.length,
-          latest_score:  oracle[0]?.composite_score || null,
-          latest_phase:  oracle[0]?.markup_phase    || null,
+          net_sm:         netSM,
+          net_mf:         netMF,
+          net_score:      netScore,
+          total_sm:       totalSmDaily,
+          total_bm:       totalBmDaily,
+          total_mfp:      totalMfPlus,
+          total_mfn:      totalMfMinus,
+          sm_10d:         latestSm10d,
+          sm_30d:         latestSm30d,
+          sm_triggers:    smTriggers.length,
+          bad_money:      badMoney.length,
+          mf_plus_hits:   mfPlus.length,
+          mf_minus_hits:  mfMinus.length,
+          latest_score:   oracle[0]?.composite_score || null,
+          latest_phase:   oracle[0]?.markup_phase    || null,
         },
-        sm_chart: smRows.map(r => ({
+        chart: smRows.map(r => ({
           date:     r.trade_date,
-          sm_daily: r.sm_daily,
-          bm_daily: r.bm_daily,
-          net:      (r.sm_daily || 0) - (r.bm_daily || 0),
+          // SM source
+          sm:       r.sm_daily,
+          bm:       r.bm_daily,
+          net_sm:   (r.sm_daily || 0) - (r.bm_daily || 0),
+          // MF source
           mfp:      r.mfp_daily,
           mfn:      r.mfn_daily,
+          net_mf:   (r.mfp_daily || 0) - (r.mfn_daily || 0),
+          // Rolling
           sm_10d:   r.sm_10d,
           sm_30d:   r.sm_30d,
         })),
@@ -146,16 +153,20 @@ export async function GET(request: NextRequest) {
       if (t.sm_10d === null) { t.sm_10d = r.sm_10d; t.sm_30d = r.sm_30d; }
     }
 
-    const ranking = Object.values(tickerMap).map(t => ({
-      ...t,
-      net_sm: t.sm_total - t.bm_total,
-      net_mf: t.mfp_total - t.mfn_total,
-      score:  (t.sm_total - t.bm_total) + (t.mfp_total - t.mfn_total),
-      verdict: (t.sm_total - t.bm_total) + (t.mfp_total - t.mfn_total) > 0
-               ? 'AKUMULASI' : 'DISTRIBUSI',
-    })).sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
+    const ranking = Object.values(tickerMap).map(t => {
+      const net_sm = t.sm_total - t.bm_total;
+      const net_mf = t.mfp_total - t.mfn_total;
+      let score = 0;
+      if (source === 'SM')      score = net_sm;
+      else if (source === 'MF') score = net_mf;
+      else                      score = net_sm + net_mf;
+      return {
+        ...t, net_sm, net_mf, score,
+        verdict: score > 0 ? 'AKUMULASI' : score < 0 ? 'DISTRIBUSI' : 'NETRAL',
+      };
+    }).sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
 
-    return NextResponse.json({ success: true, days, ranking });
+    return NextResponse.json({ success: true, days, source, ranking });
 
   } catch (error) {
     console.error('[/api/sm-analysis] Error:', error);
