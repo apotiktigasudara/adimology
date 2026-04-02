@@ -5,6 +5,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Server-side admin client — bypasses RLS, only use in API routes / Netlify functions
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
 /**
  * Save stock query to database
  */
@@ -391,7 +395,7 @@ export async function updatePreviousDayRealPrice(emiten: string, currentDate: st
  * Create a new agent story record with pending status
  */
 export async function createAgentStory(emiten: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('agent_stories')
     .insert({ emiten, status: 'pending' })
     .select()
@@ -420,7 +424,7 @@ export async function updateAgentStory(id: number, data: {
   sources?: { title: string; uri: string }[];
 }) {
 
-  const { data: result, error } = await supabase
+  const { data: result, error } = await supabaseAdmin
     .from('agent_stories')
     .update(data)
     .eq('id', id)
@@ -477,7 +481,7 @@ export async function getAgentStoriesByEmiten(emiten: string, limit: number = 20
  * Create a new background job log entry
  */
 export async function createBackgroundJobLog(jobName: string, totalItems: number = 0) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('background_job_logs')
     .insert({
       job_name: jobName,
@@ -514,14 +518,14 @@ export async function appendBackgroundJobLogEntry(
   };
 
   // Use raw SQL to append to JSONB array for atomic operation
-  const { error } = await supabase.rpc('append_job_log_entry', {
+  const { error } = await supabaseAdmin.rpc('append_job_log_entry', {
     p_job_id: jobId,
     p_entry: logEntry,
   });
 
   // If RPC doesn't exist, fallback to fetch-and-update
   if (error && error.code === 'PGRST202') {
-    const { data: current } = await supabase
+    const { data: current } = await supabaseAdmin
       .from('background_job_logs')
       .select('log_entries')
       .eq('id', jobId)
@@ -530,7 +534,7 @@ export async function appendBackgroundJobLogEntry(
     const entries = current?.log_entries || [];
     entries.push(logEntry);
 
-    await supabase
+    await supabaseAdmin
       .from('background_job_logs')
       .update({ log_entries: entries })
       .eq('id', jobId);
@@ -552,7 +556,7 @@ export async function updateBackgroundJobLog(
     metadata?: Record<string, unknown>;
   }
 ) {
-  const { data: result, error } = await supabase
+  const { data: result, error } = await supabaseAdmin
     .from('background_job_logs')
     .update({
       ...data,
