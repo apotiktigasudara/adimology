@@ -68,8 +68,8 @@ const Navbar = () => {
             >
               History
             </Link>
-            <Link 
-              href="/summary" 
+            <Link
+              href="/summary"
               style={{
                 textDecoration: 'none',
                 color: pathname === '/summary' ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -82,7 +82,35 @@ const Navbar = () => {
             >
               Summary
             </Link>
-            <a 
+            <Link
+              href="/flow"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/flow' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/flow' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/flow' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              Flow
+            </Link>
+            <Link
+              href="/triggers"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/triggers' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/triggers' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/triggers' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              Triggers
+            </Link>
+            <a
               href="https://github.com/bhaktiutama/adimology" 
               target="_blank" 
               rel="noopener noreferrer"
@@ -178,9 +206,37 @@ const Navbar = () => {
             >
               Summary
             </Link>
-            <a 
-              href="https://github.com/bhaktiutama/adimology" 
-              target="_blank" 
+            <Link
+              href="/flow"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/flow' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/flow' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              Flow
+            </Link>
+            <Link
+              href="/triggers"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/triggers' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/triggers' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              Triggers
+            </Link>
+            <a
+              href="https://github.com/bhaktiutama/adimology"
+              target="_blank"
               rel="noopener noreferrer"
               style={{
                 display: 'flex',
