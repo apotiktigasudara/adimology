@@ -8,6 +8,9 @@ const PUBLIC_PATHS = [
   '/api/auth/verify-password',
   '/api/auth/check-password',
   '/api/auth/set-password', // Allow initial setup
+  // Phoenix Bot data feeds — read-only, no auth needed
+  '/api/bandar-alerts',
+  '/api/bandar-flow',
 ];
 
 export async function proxy(request: NextRequest) {

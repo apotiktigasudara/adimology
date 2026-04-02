@@ -37,9 +37,22 @@ export default function SignalFeed({ onSelect }: SignalFeedProps) {
   const load = async () => {
     try {
       const res = await fetch('/api/bandar-alerts?limit=5&min_score=40');
-      if (!res.ok) return;
-      const json = await res.json();
-      setAlerts(json.data ?? []);
+      if (res.ok) {
+        const json = await res.json();
+        setAlerts(json.data ?? []);
+        return;
+      }
+    } catch {}
+
+    // Fallback: query Supabase directly (bypasses middleware auth)
+    try {
+      const { data } = await supabase
+        .from('bandar_alerts')
+        .select('*')
+        .gte('combined_score', 40)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setAlerts((data ?? []) as BandarAlert[]);
     } catch {}
   };
 
