@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import TokenStatusIndicator from './TokenStatusIndicator';
@@ -14,11 +14,26 @@ const Navbar = () => {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isAnalitikOpen, setIsAnalitikOpen] = useState(false);
+  const [isTriggersOpen, setIsTriggersOpen] = useState(false);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  const closeAllDropdowns = () => { setIsAnalitikOpen(false); setIsTriggersOpen(false); };
+
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        closeAllDropdowns();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
-    <nav className="navbar">
+    <nav className="navbar" ref={navRef}>
       <div className="navbar-container">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div className="navbar-logo-icon" style={{ background: 'transparent', display: 'flex', alignItems: 'center' }}>
@@ -97,9 +112,13 @@ const Navbar = () => {
               Flow
             </Link>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
-              <span
+              <button
+                onClick={() => { setIsAnalitikOpen(v => !v); setIsTriggersOpen(false); }}
                 style={{
-                  textDecoration: 'none',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
                   color: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p)
                     ? 'var(--text-primary)' : 'var(--text-secondary)',
                   fontWeight: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p) ? 600 : 400,
@@ -107,39 +126,44 @@ const Navbar = () => {
                   borderBottom: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p)
                     ? '2px solid var(--accent-primary)' : '2px solid transparent',
                   paddingBottom: '2px',
-                  cursor: 'default',
                 }}
               >
-                Analitik ▾
-              </span>
-              <div className="nav-dropdown">
-                <Link href="/confluence"  className="nav-dropdown-item">🎯 Confluence</Link>
-                <Link href="/heatmap"     className="nav-dropdown-item">🔥 Sector Heatmap</Link>
-                <Link href="/alerts"      className="nav-dropdown-item">🚨 Alert Center</Link>
-                <Link href="/backtest"    className="nav-dropdown-item">📈 Backtest Mini</Link>
-              </div>
+                Analitik {isAnalitikOpen ? '▴' : '▾'}
+              </button>
+              {isAnalitikOpen && (
+                <div className="nav-dropdown" style={{ display: 'flex' }}>
+                  <Link href="/confluence"  className="nav-dropdown-item" onClick={closeAllDropdowns}>🎯 Confluence</Link>
+                  <Link href="/heatmap"     className="nav-dropdown-item" onClick={closeAllDropdowns}>🔥 Sector Heatmap</Link>
+                  <Link href="/alerts"      className="nav-dropdown-item" onClick={closeAllDropdowns}>🚨 Alert Center</Link>
+                  <Link href="/backtest"    className="nav-dropdown-item" onClick={closeAllDropdowns}>📈 Backtest Mini</Link>
+                </div>
+              )}
             </div>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
-              <Link
-                href="/triggers"
+              <button
+                onClick={() => { setIsTriggersOpen(v => !v); setIsAnalitikOpen(false); }}
                 style={{
-                  textDecoration: 'none',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
                   color: pathname.startsWith('/triggers') ? 'var(--text-primary)' : 'var(--text-secondary)',
                   fontWeight: pathname.startsWith('/triggers') ? 600 : 400,
                   fontSize: '0.9rem',
                   borderBottom: pathname.startsWith('/triggers') ? '2px solid var(--accent-primary)' : '2px solid transparent',
                   paddingBottom: '2px',
-                  transition: 'all 0.2s'
                 }}
               >
-                Triggers ▾
-              </Link>
-              <div className="nav-dropdown">
-                <Link href="/triggers" className="nav-dropdown-item">📡 Signal Feed</Link>
-                <Link href="/triggers/smkalkulator" className="nav-dropdown-item">💰 SM Kalkulator</Link>
-                <Link href="/triggers/mfkalkulator" className="nav-dropdown-item">📊 MF Kalkulator</Link>
-                <Link href="/triggers/algo" className="nav-dropdown-item">🤖 Algo Signals</Link>
-              </div>
+                Triggers {isTriggersOpen ? '▴' : '▾'}
+              </button>
+              {isTriggersOpen && (
+                <div className="nav-dropdown" style={{ display: 'flex' }}>
+                  <Link href="/triggers" className="nav-dropdown-item" onClick={closeAllDropdowns}>📡 Signal Feed</Link>
+                  <Link href="/triggers/smkalkulator" className="nav-dropdown-item" onClick={closeAllDropdowns}>💰 SM Kalkulator</Link>
+                  <Link href="/triggers/mfkalkulator" className="nav-dropdown-item" onClick={closeAllDropdowns}>📊 MF Kalkulator</Link>
+                  <Link href="/triggers/algo" className="nav-dropdown-item" onClick={closeAllDropdowns}>🤖 Algo Signals</Link>
+                </div>
+              )}
             </div>
             <a
               href="https://github.com/bhaktiutama/adimology" 
