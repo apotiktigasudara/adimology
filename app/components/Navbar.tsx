@@ -124,6 +124,20 @@ const Navbar = () => {
             >
               🔥 Heatmap
             </Link>
+            <Link
+              href="/alerts"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/alerts' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/alerts' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/alerts' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              🚨 Alerts
+            </Link>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
               <Link
                 href="/triggers"
@@ -297,6 +311,20 @@ const Navbar = () => {
               }}
             >
               🔥 Heatmap
+            </Link>
+            <Link
+              href="/alerts"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/alerts' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/alerts' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              🚨 Alerts
             </Link>
             <a
               href="https://github.com/bhaktiutama/adimology"
