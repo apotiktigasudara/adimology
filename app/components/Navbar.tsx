@@ -96,62 +96,29 @@ const Navbar = () => {
             >
               Flow
             </Link>
-            <Link
-              href="/confluence"
-              style={{
-                textDecoration: 'none',
-                color: pathname === '/confluence' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: pathname === '/confluence' ? 600 : 400,
-                fontSize: '0.9rem',
-                borderBottom: pathname === '/confluence' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                paddingBottom: '2px',
-                transition: 'all 0.2s'
-              }}
-            >
-              🎯 Confluence
-            </Link>
-            <Link
-              href="/heatmap"
-              style={{
-                textDecoration: 'none',
-                color: pathname === '/heatmap' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: pathname === '/heatmap' ? 600 : 400,
-                fontSize: '0.9rem',
-                borderBottom: pathname === '/heatmap' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                paddingBottom: '2px',
-                transition: 'all 0.2s'
-              }}
-            >
-              🔥 Heatmap
-            </Link>
-            <Link
-              href="/alerts"
-              style={{
-                textDecoration: 'none',
-                color: pathname === '/alerts' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: pathname === '/alerts' ? 600 : 400,
-                fontSize: '0.9rem',
-                borderBottom: pathname === '/alerts' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                paddingBottom: '2px',
-                transition: 'all 0.2s'
-              }}
-            >
-              🚨 Alerts
-            </Link>
-            <Link
-              href="/backtest"
-              style={{
-                textDecoration: 'none',
-                color: pathname === '/backtest' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                fontWeight: pathname === '/backtest' ? 600 : 400,
-                fontSize: '0.9rem',
-                borderBottom: pathname === '/backtest' ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                paddingBottom: '2px',
-                transition: 'all 0.2s'
-              }}
-            >
-              📈 Backtest
-            </Link>
+            <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
+              <span
+                style={{
+                  textDecoration: 'none',
+                  color: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p)
+                    ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  fontWeight: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p) ? 600 : 400,
+                  fontSize: '0.9rem',
+                  borderBottom: ['/confluence','/heatmap','/alerts','/backtest'].some(p => pathname === p)
+                    ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                  paddingBottom: '2px',
+                  cursor: 'default',
+                }}
+              >
+                Analitik ▾
+              </span>
+              <div className="nav-dropdown">
+                <Link href="/confluence"  className="nav-dropdown-item">🎯 Confluence</Link>
+                <Link href="/heatmap"     className="nav-dropdown-item">🔥 Sector Heatmap</Link>
+                <Link href="/alerts"      className="nav-dropdown-item">🚨 Alert Center</Link>
+                <Link href="/backtest"    className="nav-dropdown-item">📈 Backtest Mini</Link>
+              </div>
+            </div>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
               <Link
                 href="/triggers"

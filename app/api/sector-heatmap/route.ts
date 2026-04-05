@@ -102,7 +102,7 @@ const STATIC_SECTOR: Record<string, string> = {
   EMTK: 'Technology', MCOM: 'Technology',
   DMMX: 'Technology', AXIO: 'Technology',
   FORE: 'Technology', INET: 'Technology',
-  DCII: 'Technology', MLPT: 'Technology',
+  DCII: 'Technology',
 
   // ENERGY
   ADRO: 'Energy', BUMI: 'Energy',

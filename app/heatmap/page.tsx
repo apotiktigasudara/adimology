@@ -402,7 +402,7 @@ export default function HeatmapPage() {
       {tooltip && (
         <div style={{
           position: 'fixed',
-          left: Math.min(tooltip.x, window.innerWidth - 220),
+          left: Math.min(tooltip.x, (typeof window !== 'undefined' ? window.innerWidth : 1024) - 220),
           top: tooltip.y + 8,
           zIndex: 9999,
           background: 'var(--bg-card)',

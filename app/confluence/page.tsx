@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import Link from 'next/link';
 import FlowTimelineChart from '@/app/components/FlowTimelineChart';
 
@@ -344,9 +344,8 @@ export default function ConfluencePage() {
               {!loading && filtered.map((row, idx) => {
                 const isHighlighted = highlighted === row.ticker;
                 return (
-                  <>
+                  <Fragment key={row.ticker}>
                   <tr
-                    key={row.ticker}
                     className={`conf-row${isHighlighted ? ' conf-row-highlight' : ''}`}
                     onClick={() => setHighlighted(isHighlighted ? null : row.ticker)}
                     style={{
@@ -452,13 +451,13 @@ export default function ConfluencePage() {
 
                   {/* Expanded chart row */}
                   {isHighlighted && (
-                    <tr key={`${row.ticker}-chart`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                       <td colSpan={10} style={{ padding: '0 1rem 1rem 1rem' }}>
                         <FlowTimelineChart ticker={row.ticker} />
                       </td>
                     </tr>
                   )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
