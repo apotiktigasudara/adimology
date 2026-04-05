@@ -16,6 +16,7 @@ const PUBLIC_PATHS = [
   '/api/confluence',
   '/api/sector-heatmap',
   '/api/alert-center',
+  '/api/backtest',
 ];
 
 export async function proxy(request: NextRequest) {

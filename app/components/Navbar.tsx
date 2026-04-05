@@ -138,6 +138,20 @@ const Navbar = () => {
             >
               🚨 Alerts
             </Link>
+            <Link
+              href="/backtest"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/backtest' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/backtest' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/backtest' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              📈 Backtest
+            </Link>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
               <Link
                 href="/triggers"
@@ -325,6 +339,20 @@ const Navbar = () => {
               }}
             >
               🚨 Alerts
+            </Link>
+            <Link
+              href="/backtest"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/backtest' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/backtest' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              📈 Backtest
             </Link>
             <a
               href="https://github.com/bhaktiutama/adimology"
