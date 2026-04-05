@@ -46,25 +46,19 @@ export async function POST(request: NextRequest) {
     // Create pending record
     const story = await createAgentStory(emiten);
 
-    // Trigger background function
+    // Trigger background route (Vercel)
     const host = request.headers.get('host');
-    const baseUrl = host?.includes('localhost') 
-      ? 'http://localhost:8888' 
-      : `https://${host}`;
+    const protocol = host?.includes('localhost') ? 'http' : 'https';
+    const baseUrl = `${protocol}://${host}`;
 
-    const functionUrl = baseUrl.includes('/.netlify/functions') 
-      ? baseUrl 
-      : `${baseUrl.replace(/\/$/, '')}/.netlify/functions`;
-
-
-    console.log(`[Agent Story] Triggering background function at: ${functionUrl}/analyze-story-background`);
+    console.log(`[Agent Story] Triggering background route at: ${baseUrl}/api/analyze-story-background`);
 
     // Fire and forget - don't await
-    fetch(`${functionUrl}/analyze-story-background?emiten=${emiten}&id=${story.id}`, {
+    fetch(`${baseUrl}/api/analyze-story-background?emiten=${emiten}&id=${story.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyStats })
-    }).catch(err => console.error('Failed to trigger background function:', err));
+    }).catch(err => console.error('Failed to trigger background route:', err));
 
     return NextResponse.json({ 
       success: true, 

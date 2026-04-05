@@ -10,6 +10,7 @@ import PriceGraph from './PriceGraph';
 import BrokerFlowCard from './BrokerFlowCard';
 import EmitenHistoryCard from './EmitenHistoryCard';
 import BandarFlowSection from './BandarFlowSection';
+import FlowTimelineChart from './FlowTimelineChart';
 
 import * as htmlToImage from 'html-to-image';
 import type { StockInput, StockAnalysisResult, KeyStatsData, AgentStoryResult } from '@/lib/types';
@@ -457,6 +458,16 @@ export default function Calculator({ selectedStock }: CalculatorProps) {
 
             {/* Phoenix Flow Section - Full Width */}
             <BandarFlowSection ticker={result.input.emiten} />
+
+            {/* SM/MF Flow Timeline Chart - Full Width */}
+            <div style={{ gridColumn: '1 / -1', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
+                  📊 SM/MF Flow Timeline — {result.input.emiten.toUpperCase()}
+                </span>
+              </div>
+              <FlowTimelineChart ticker={result.input.emiten} days={30} />
+            </div>
 
             {/* Agent Story Section - Full Width */}
             <div style={{ gridColumn: '1 / -1', width: '100%' }}>

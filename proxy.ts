@@ -17,6 +17,7 @@ const PUBLIC_PATHS = [
   '/api/sector-heatmap',
   '/api/alert-center',
   '/api/backtest',
+  '/api/analyze-story-background',
 ];
 
 export async function proxy(request: NextRequest) {
