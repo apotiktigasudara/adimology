@@ -96,6 +96,20 @@ const Navbar = () => {
             >
               Flow
             </Link>
+            <Link
+              href="/confluence"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/confluence' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/confluence' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/confluence' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              🎯 Confluence
+            </Link>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
               <Link
                 href="/triggers"
@@ -241,6 +255,20 @@ const Navbar = () => {
               }}
             >
               Triggers
+            </Link>
+            <Link
+              href="/confluence"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/confluence' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/confluence' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              🎯 Confluence
             </Link>
             <a
               href="https://github.com/bhaktiutama/adimology"

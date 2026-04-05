@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   '/api/bandar-flow',
   '/api/triggers',
   '/api/sm-analysis',
+  '/api/confluence',
 ];
 
 export async function proxy(request: NextRequest) {
