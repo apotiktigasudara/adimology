@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   '/api/triggers',
   '/api/sm-analysis',
   '/api/confluence',
+  '/api/sector-heatmap',
 ];
 
 export async function proxy(request: NextRequest) {
