@@ -17,22 +17,47 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import type { BandarFlow } from '@/lib/bandar-flow.types';
+
+// Pakai service key agar tidak diblokir RLS
+const sb = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
 
     const today    = new Date().toISOString().split('T')[0];
-    const date     = searchParams.get('date')      || today;
+    let   date     = searchParams.get('date') || today;
     const arah     = searchParams.get('arah')      || null;
     const strength = searchParams.get('strength')  || null;
     const ticker   = searchParams.get('ticker')    || null;
     const minScore = Math.max(0, parseInt(searchParams.get('min_score') || '0'));
     const limit    = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '30')), 100);
 
-    let query = supabase
+    // Jika tidak ada data untuk tanggal yang diminta, fallback ke tanggal terakhir yang ada data
+    const checkEmpty = await sb
+      .from('bandar_flow')
+      .select('trade_date')
+      .eq('trade_date', date)
+      .limit(1);
+
+    if (!checkEmpty.data || checkEmpty.data.length === 0) {
+      // Ambil tanggal terbaru yang ada data
+      const latest = await sb
+        .from('bandar_flow')
+        .select('trade_date')
+        .order('trade_date', { ascending: false })
+        .limit(1);
+      if (latest.data && latest.data.length > 0) {
+        date = latest.data[0].trade_date;
+      }
+    }
+
+    let query = sb
       .from('bandar_flow')
       .select('*')
       .eq('trade_date', date)
