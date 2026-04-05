@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /**
  * SmMfKalkulator — shared component untuk SM Kalkulator dan MF Kalkulator
@@ -82,6 +82,9 @@ export default function SmMfKalkulator({ source }: Props) {
     } catch (e) { setError(String(e)); }
     finally { setLoading(false); }
   }, [ticker, days, mode, source]);
+
+  // Auto-load ranking on mount
+  useEffect(() => { analyze(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>

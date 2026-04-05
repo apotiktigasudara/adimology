@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   // Phoenix Bot data feeds — read-only, no auth needed
   '/api/bandar-alerts',
   '/api/bandar-flow',
+  '/api/triggers',
+  '/api/sm-analysis',
 ];
 
 export async function proxy(request: NextRequest) {
