@@ -12,6 +12,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import BandarAccumCard from '@/app/components/BandarAccumCard';
+import FlowTimelineChart from '@/app/components/FlowTimelineChart';
 import type { BandarFlow } from '@/lib/bandar-flow.types';
 import { supabase } from '@/lib/supabase';
 
@@ -35,12 +36,13 @@ function today(): string {
 }
 
 export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = {}) {
-  const [data,      setData]      = useState<BandarFlow[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState<string | null>(null);
-  const [arahTab,   setArahTab]   = useState<ArahFilter>('ALL');
-  const [minScore,  setMinScore]  = useState(40);
-  const [lastFetch, setLastFetch] = useState<Date | null>(null);
+  const [data,        setData]        = useState<BandarFlow[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState<string | null>(null);
+  const [arahTab,     setArahTab]     = useState<ArahFilter>('ALL');
+  const [minScore,    setMinScore]    = useState(40);
+  const [lastFetch,   setLastFetch]   = useState<Date | null>(null);
+  const [chartTicker, setChartTicker] = useState<string | null>(null);
 
   // Ref untuk dedupe realtime updates
   const dataRef = useRef<BandarFlow[]>([]);
@@ -240,8 +242,51 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
               key={`${item.ticker}-${item.trade_date}`}
               data={item}
               onAnalyze={onAnalyze}
+              onChart={(t) => setChartTicker(t)}
             />
           ))}
+        </div>
+      )}
+      {/* Flow Timeline Chart Modal */}
+      {chartTicker && (
+        <div
+          onClick={() => setChartTicker(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: '760px',
+              maxHeight: '90vh', overflowY: 'auto',
+              borderRadius: '16px',
+            }}
+          >
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              marginBottom: '0.5rem', padding: '0 0.25rem',
+            }}>
+              <span style={{ fontWeight: 700, color: '#f1f5f9', fontSize: '0.9rem' }}>
+                Flow Timeline — {chartTicker}
+              </span>
+              <button
+                onClick={() => setChartTicker(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '8px', padding: '0.3rem 0.7rem',
+                  color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem',
+                }}
+              >
+                ✕ Tutup
+              </button>
+            </div>
+            <FlowTimelineChart ticker={chartTicker} />
+          </div>
         </div>
       )}
     </div>

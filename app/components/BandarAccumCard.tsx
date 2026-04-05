@@ -15,6 +15,8 @@ interface BandarAccumCardProps {
   data: BandarFlow;
   /** Jika diisi, tampilkan tombol "Analisa →" yang memanggil callback ini */
   onAnalyze?: (ticker: string) => void;
+  /** Jika diisi, tampilkan tombol "📊 Chart" yang memanggil callback ini */
+  onChart?: (ticker: string) => void;
 }
 
 function velLabel(v: number): string {
@@ -39,7 +41,7 @@ function fmtTime(iso: string): string {
   } catch { return iso; }
 }
 
-export default function BandarAccumCard({ data, onAnalyze }: BandarAccumCardProps) {
+export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccumCardProps) {
   const brokers = data.top_brokers ?? [];
 
   return (
@@ -180,20 +182,36 @@ export default function BandarAccumCard({ data, onAnalyze }: BandarAccumCardProp
       {/* ── Footer ─────────────────────────────────────────── */}
       <div className="bf-card-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span>Updated {fmtTime(data.updated_at)}</span>
-        {onAnalyze && (
-          <button
-            onClick={() => onAnalyze(data.ticker)}
-            style={{
-              fontSize: '0.65rem', fontWeight: 600,
-              padding: '0.2rem 0.6rem', borderRadius: '6px',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: 'var(--text-primary)', cursor: 'pointer',
-            }}
-          >
-            Analisa →
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          {onChart && (
+            <button
+              onClick={() => onChart(data.ticker)}
+              style={{
+                fontSize: '0.65rem', fontWeight: 600,
+                padding: '0.2rem 0.6rem', borderRadius: '6px',
+                background: 'rgba(100,149,237,0.1)',
+                border: '1px solid rgba(100,149,237,0.25)',
+                color: '#6495ed', cursor: 'pointer',
+              }}
+            >
+              📊 Chart
+            </button>
+          )}
+          {onAnalyze && (
+            <button
+              onClick={() => onAnalyze(data.ticker)}
+              style={{
+                fontSize: '0.65rem', fontWeight: 600,
+                padding: '0.2rem 0.6rem', borderRadius: '6px',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: 'var(--text-primary)', cursor: 'pointer',
+              }}
+            >
+              Analisa →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

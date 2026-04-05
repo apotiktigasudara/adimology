@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import FlowTimelineChart from '@/app/components/FlowTimelineChart';
 
 interface ConfluenceRow {
   ticker: string;
@@ -167,7 +168,9 @@ export default function ConfluencePage() {
           50% { opacity: 1; }
         }
         .conf-row-highlight { background: rgba(100,149,237,0.08) !important; }
-        .conf-row:hover { background: var(--bg-hover, rgba(255,255,255,0.03)) !important; cursor: pointer; }
+        .conf-row:hover { background: var(--bg-hover, rgba(255,255,255,0.04)) !important; cursor: pointer; }
+        .conf-row:hover td:first-child::after { content: ' ▾'; color: var(--accent-primary, #6495ed); font-size: 0.7rem; }
+        .conf-row-highlight td:first-child { color: var(--accent-primary, #6495ed) !important; }
       `}</style>
 
       {/* Header */}
@@ -341,12 +344,13 @@ export default function ConfluencePage() {
               {!loading && filtered.map((row, idx) => {
                 const isHighlighted = highlighted === row.ticker;
                 return (
+                  <>
                   <tr
                     key={row.ticker}
                     className={`conf-row${isHighlighted ? ' conf-row-highlight' : ''}`}
                     onClick={() => setHighlighted(isHighlighted ? null : row.ticker)}
                     style={{
-                      borderBottom: '1px solid var(--border-color)',
+                      borderBottom: isHighlighted ? 'none' : '1px solid var(--border-color)',
                       transition: 'background 0.15s',
                     }}
                   >
@@ -445,6 +449,16 @@ export default function ConfluencePage() {
                       {row.days_data}
                     </td>
                   </tr>
+
+                  {/* Expanded chart row */}
+                  {isHighlighted && (
+                    <tr key={`${row.ticker}-chart`} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td colSpan={10} style={{ padding: '0 1rem 1rem 1rem' }}>
+                        <FlowTimelineChart ticker={row.ticker} />
+                      </td>
+                    </tr>
+                  )}
+                  </>
                 );
               })}
             </tbody>
