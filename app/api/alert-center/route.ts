@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
           net_avg5d: Math.round(avg5Net * 100) / 100,
           spike_ratio: null,
           sm_today: sm, bm_today: bm, mfp_today: mfp, mfn_today: mfn,
-          description: `Confluence ${confScore} (threshold ${threshold}) · SM Net ${smNetRoll >= 0 ? '+' : ''}${smNetRoll.toFixed(1)}M · MF Net ${mfNetRoll >= 0 ? '+' : ''}${mfNetRoll.toFixed(1)}M`,
+          description: `Confluence ${confScore} (threshold ${threshold}) |SM Net ${smNetRoll >= 0 ? '+' : ''}${smNetRoll.toFixed(1)}M |MF Net ${mfNetRoll >= 0 ? '+' : ''}${mfNetRoll.toFixed(1)}M`,
         });
         continue; // Don't double-flag
       }
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
           net_avg5d: Math.round(avg5Net * 100) / 100,
           spike_ratio: Math.round(spikeRatio * 10) / 10,
           sm_today: sm, bm_today: bm, mfp_today: mfp, mfn_today: mfn,
-          description: `Spike ${spikeRatio >= 0 ? '+' : ''}${spikeRatio.toFixed(1)}x rata-rata 5 hari · Inflow hari ini: ${netToday >= 0 ? '+' : ''}${netToday.toFixed(2)}M`,
+          description: `Spike ${spikeRatio >= 0 ? '+' : ''}${spikeRatio.toFixed(1)}x rata-rata 5 hari |Inflow hari ini: ${netToday >= 0 ? '+' : ''}${netToday.toFixed(2)}M`,
         });
         continue;
       }
