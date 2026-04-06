@@ -6,6 +6,255 @@ import {
   ResponsiveContainer, Cell, ReferenceLine,
 } from 'recharts';
 
+// ── Algo Backtest Component ────────────────────────────────────────────────────
+
+interface AlgoSummary {
+  algo_name: string;
+  total: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  avg_forward_net: number;
+}
+
+interface AlgoSignalRow {
+  ticker: string;
+  algo_name: string;
+  algo_type: string;
+  signal_date: string;
+  forward_net: number;
+  result: 'WIN' | 'LOSS' | 'PENDING';
+  forward_days_actual: number;
+}
+
+interface AlgoBacktestResponse {
+  success: boolean;
+  params: { days: number; forward_days: number; algo_type: string };
+  overall: { total_signals: number; pending: number; wins: number; win_rate: number };
+  summary: AlgoSummary[];
+  recent_signals: AlgoSignalRow[];
+  generated_at: string;
+  error?: string;
+}
+
+function AlgoBacktest() {
+  const [data, setData]         = useState<AlgoBacktestResponse | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState<string | null>(null);
+  const [days, setDays]         = useState(30);
+  const [fwdDays, setFwdDays]   = useState(5);
+  const [algoType, setAlgoType] = useState('positive');
+  const [tab, setTab]           = useState<'summary' | 'signals'>('summary');
+
+  const fetch = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const res  = await window.fetch(`/api/backtest/algo?days=${days}&forward_days=${fwdDays}&algo_type=${algoType}`);
+      const json: AlgoBacktestResponse = await res.json();
+      if (!json.success) throw new Error(json.error || 'Gagal');
+      setData(json);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally { setLoading(false); }
+  }, [days, fwdDays, algoType]);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const ov = data?.overall;
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
+          🤖 Algo Backtest
+        </h2>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+          Win rate per algo name dari chart_saham_bot · Forward SM flow {fwdDays} hari pasca sinyal
+        </p>
+      </div>
+
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Tipe:</span>
+          {(['positive', 'negative', 'all'] as const).map(t => (
+            <button key={t} onClick={() => setAlgoType(t)} style={{
+              padding: '0.3rem 0.7rem', borderRadius: '8px', border: '1px solid',
+              borderColor: algoType === t ? '#a78bfa' : 'var(--border-color)',
+              background: algoType === t ? 'rgba(167,139,250,0.15)' : 'var(--bg-card)',
+              color: algoType === t ? '#a78bfa' : 'var(--text-secondary)',
+              fontSize: '0.78rem', cursor: 'pointer', fontWeight: algoType === t ? 600 : 400,
+            }}>{t === 'positive' ? '⬆ Positif' : t === 'negative' ? '⬇ Negatif' : 'Semua'}</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Hari data:</span>
+          {[14, 30, 60, 90].map(d => (
+            <button key={d} onClick={() => setDays(d)} style={{
+              padding: '0.3rem 0.6rem', borderRadius: '8px', border: '1px solid',
+              borderColor: days === d ? '#4ade80' : 'var(--border-color)',
+              background: days === d ? 'rgba(74,222,128,0.12)' : 'var(--bg-card)',
+              color: days === d ? '#4ade80' : 'var(--text-secondary)',
+              fontSize: '0.78rem', cursor: 'pointer', fontWeight: days === d ? 600 : 400,
+            }}>{d}H</button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Forward:</span>
+          {[3, 5, 10, 15].map(d => (
+            <button key={d} onClick={() => setFwdDays(d)} style={{
+              padding: '0.3rem 0.6rem', borderRadius: '8px', border: '1px solid',
+              borderColor: fwdDays === d ? '#fbbf24' : 'var(--border-color)',
+              background: fwdDays === d ? 'rgba(251,191,36,0.12)' : 'var(--bg-card)',
+              color: fwdDays === d ? '#fbbf24' : 'var(--text-secondary)',
+              fontSize: '0.78rem', cursor: 'pointer', fontWeight: fwdDays === d ? 600 : 400,
+            }}>{d}H</button>
+          ))}
+        </div>
+        <button onClick={fetch} disabled={loading} style={{
+          padding: '0.35rem 0.9rem', borderRadius: '8px', border: '1px solid var(--border-color)',
+          background: 'var(--bg-card)', color: 'var(--text-secondary)', fontSize: '0.8rem',
+          cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+        }}>
+          {loading ? '⏳ Running...' : '▶ Run'}
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ padding: '0.85rem 1rem', borderRadius: '10px', marginBottom: '1rem',
+          background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)',
+          color: '#f87171', fontSize: '0.85rem' }}>Error: {error}</div>
+      )}
+
+      {/* Overall stats */}
+      {!loading && ov && (
+        <div style={{ display: 'flex', gap: '0.65rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total Sinyal', value: ov.total_signals, color: 'var(--text-primary)' },
+            { label: '✅ WIN',       value: ov.wins,           color: '#4ade80' },
+            { label: '❌ LOSS',      value: ov.total_signals - ov.wins, color: '#f87171' },
+            { label: 'Win Rate',     value: `${ov.win_rate}%`, color: ov.win_rate >= 60 ? '#4ade80' : ov.win_rate >= 50 ? '#fbbf24' : '#f87171' },
+            { label: '⏳ Pending',   value: ov.pending,        color: '#94a3b8' },
+          ].map(c => (
+            <div key={c.label} style={{ padding: '0.75rem 1rem', borderRadius: '12px',
+              background: 'var(--bg-card)', border: '1px solid var(--border-color)', minWidth: '110px' }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{c.label}</div>
+              <div style={{ fontSize: '1.35rem', fontWeight: 700, color: c.color }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-color)',
+          color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          ⏳ Menganalisa algo signals...
+        </div>
+      ) : !data?.summary?.length ? (
+        <div style={{ padding: '2rem', textAlign: 'center', borderRadius: '14px',
+          background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+          color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+          Tidak ada sinyal algo ditemukan. Coba perbesar rentang hari.
+        </div>
+      ) : (
+        <>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            {[{ key: 'summary', label: '📊 Per Algo Name' }, { key: 'signals', label: '📝 Sinyal Terbaru' }].map(t => (
+              <button key={t.key} onClick={() => setTab(t.key as any)} style={{
+                padding: '0.4rem 1rem', borderRadius: '8px', border: '1px solid',
+                borderColor: tab === t.key ? '#a78bfa' : 'var(--border-color)',
+                background: tab === t.key ? 'rgba(167,139,250,0.15)' : 'transparent',
+                color: tab === t.key ? '#a78bfa' : 'var(--text-secondary)',
+                fontSize: '0.82rem', cursor: 'pointer', fontWeight: tab === t.key ? 600 : 400,
+              }}>{t.label}</button>
+            ))}
+          </div>
+
+          {tab === 'summary' && (
+            <div style={{ background: 'var(--bg-card)', borderRadius: '14px',
+              border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {['#', 'Algo Name', 'Sinyal', 'WIN', 'LOSS', 'Win Rate', 'Avg Fwd Net'].map(h => (
+                      <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left',
+                        color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem',
+                        borderBottom: '1px solid var(--border-color)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.summary.map((row, idx) => (
+                    <tr key={row.algo_name} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '0.65rem 1rem', color: 'var(--text-secondary)', width: '32px' }}>{idx + 1}</td>
+                      <td style={{ padding: '0.65rem 1rem', fontWeight: 600, color: '#a78bfa', maxWidth: '220px',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.algo_name}</td>
+                      <td style={{ padding: '0.65rem 1rem', color: 'var(--text-secondary)' }}>{row.total}</td>
+                      <td style={{ padding: '0.65rem 1rem', color: '#4ade80', fontWeight: 600 }}>{row.wins}</td>
+                      <td style={{ padding: '0.65rem 1rem', color: '#f87171', fontWeight: 600 }}>{row.losses}</td>
+                      <td style={{ padding: '0.65rem 1rem', fontWeight: 700,
+                        color: row.win_rate >= 65 ? '#4ade80' : row.win_rate >= 50 ? '#fbbf24' : '#f87171' }}>
+                        {row.win_rate}%
+                      </td>
+                      <td style={{ padding: '0.65rem 1rem', fontWeight: 600,
+                        color: row.avg_forward_net >= 0 ? '#4ade80' : '#f87171' }}>
+                        {row.avg_forward_net >= 0 ? '+' : ''}{row.avg_forward_net.toFixed(2)}M
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {tab === 'signals' && (
+            <div style={{ background: 'var(--bg-card)', borderRadius: '14px',
+              border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
+                      {['Tanggal', 'Ticker', 'Algo Name', 'Forward Net', 'Hasil'].map(h => (
+                        <th key={h} style={{ padding: '0.7rem 1rem', textAlign: 'left',
+                          color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.72rem',
+                          borderBottom: '1px solid var(--border-color)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.recent_signals.map((s, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td style={{ padding: '0.6rem 1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{s.signal_date}</td>
+                        <td style={{ padding: '0.6rem 1rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{s.ticker}</td>
+                        <td style={{ padding: '0.6rem 1rem', color: '#a78bfa', maxWidth: '200px',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.algo_name}</td>
+                        <td style={{ padding: '0.6rem 1rem', fontWeight: 600,
+                          color: s.forward_net >= 0 ? '#4ade80' : '#f87171' }}>
+                          {s.forward_net >= 0 ? '+' : ''}{s.forward_net.toFixed(2)}M
+                        </td>
+                        <td style={{ padding: '0.6rem 1rem' }}>
+                          <span style={{ padding: '0.15rem 0.5rem', borderRadius: '5px', fontSize: '0.72rem', fontWeight: 700,
+                            color: s.result === 'WIN' ? '#4ade80' : '#f87171',
+                            background: s.result === 'WIN' ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)' }}>
+                            {s.result === 'WIN' ? '✅ WIN' : '❌ LOSS'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 interface BucketStat {
   label: string;
   total: number;
@@ -92,6 +341,7 @@ function BucketTooltip({ active, payload }: TooltipProps) {
 }
 
 export default function BacktestPage() {
+  const [mainTab, setMainTab]     = useState<'confluence' | 'algo'>('confluence');
   const [data, setData]           = useState<BacktestResponse | null>(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -121,6 +371,26 @@ export default function BacktestPage() {
 
   return (
     <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Main tab switcher */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
+        borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+        {[
+          { key: 'confluence', label: '📈 Confluence Backtest' },
+          { key: 'algo',       label: '🤖 Algo Backtest' },
+        ].map(t => (
+          <button key={t.key} onClick={() => setMainTab(t.key as any)} style={{
+            padding: '0.45rem 1.1rem', borderRadius: '8px', border: '1px solid',
+            borderColor: mainTab === t.key ? 'var(--accent-primary)' : 'var(--border-color)',
+            background: mainTab === t.key ? 'rgba(100,149,237,0.15)' : 'var(--bg-card)',
+            color: mainTab === t.key ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            fontSize: '0.85rem', cursor: 'pointer', fontWeight: mainTab === t.key ? 600 : 400,
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {mainTab === 'algo' && <AlgoBacktest />}
+      {mainTab === 'confluence' && <>
+
       {/* Header */}
       <div style={{ marginBottom: '1.25rem' }}>
         <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.2rem' }}>
@@ -454,6 +724,7 @@ export default function BacktestPage() {
           )}
         </>
       )}
+      </>}
     </div>
   );
 }

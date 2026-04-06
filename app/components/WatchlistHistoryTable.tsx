@@ -261,6 +261,31 @@ export default function WatchlistHistoryTable() {
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
           <button
             className="solid-btn"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/watchlist/groups?sync=true');
+                const json = await res.json();
+                if (json.success) {
+                  alert(`Sync berhasil: ${json.data?.length || 0} group dari Stockbit`);
+                  fetchHistory();
+                } else {
+                  alert(`Sync gagal: ${json.error}`);
+                }
+              } catch (e) {
+                alert(`Error: ${e}`);
+              }
+            }}
+            style={{
+              padding: '0 1rem', fontSize: '0.8rem', fontWeight: '700',
+              borderRadius: '8px', background: '#1d4ed8', color: 'white',
+              border: '1px solid #1d4ed8', cursor: 'pointer', height: '38px',
+              display: 'flex', alignItems: 'center', gap: '0.35rem',
+            }}
+          >
+            🔄 Sync Watchlist
+          </button>
+          <button
+            className="solid-btn"
             onClick={fetchHistory}
             style={{ 
               padding: '0 1.25rem', 
