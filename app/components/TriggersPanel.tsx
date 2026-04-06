@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -68,8 +68,11 @@ export default function TriggersPanel({ activeTab }: Props) {
   const [alerts,  setAlerts]  = useState<BandarAlert[]>([]);
   const [trades,  setTrades]  = useState<TradeSignal[]>([]);
   const [algos,   setAlgos]   = useState<AlgoSignal[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [countdown,   setCountdown]   = useState(30);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Filters
   const [filterArah,    setFilterArah]    = useState('');
@@ -111,6 +114,7 @@ export default function TriggersPanel({ activeTab }: Props) {
       setError(String(e));
     } finally {
       setLoading(false);
+      setLastUpdated(new Date());
     }
   }, [activeTab, filterTicker, filterArah, filterTrigger, filterDays, fromISO]);
 
@@ -124,6 +128,20 @@ export default function TriggersPanel({ activeTab }: Props) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bandar_alerts' }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
+  }, [activeTab, fetchData]);
+
+  // Auto-refresh 30 detik untuk trade & algo
+  useEffect(() => {
+    if (activeTab === 'signals') return;
+    setCountdown(30);
+    const interval = setInterval(() => { fetchData(); setCountdown(30); }, 30000);
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => (prev <= 1 ? 30 : prev - 1));
+    }, 1000);
+    return () => {
+      clearInterval(interval);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
   }, [activeTab, fetchData]);
 
   // ── Render ─────────────────────────────────────────────────────────────── #
@@ -179,6 +197,17 @@ export default function TriggersPanel({ activeTab }: Props) {
         )}
         <button onClick={fetchData} style={btnStyle}>↻ Refresh</button>
         {loading && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Loading...</span>}
+        {!loading && activeTab !== 'signals' && (
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
+            🔄 auto {countdown}s
+            {lastUpdated && ` · ${lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+          </span>
+        )}
+        {!loading && activeTab === 'signals' && lastUpdated && (
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
+            ⚡ realtime · {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+        )}
       </div>
 
       {error && (
