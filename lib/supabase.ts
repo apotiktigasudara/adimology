@@ -50,7 +50,8 @@ export async function saveStockQuery(data: {
  * Get session value by key
  */
 export async function getSessionValue(key: string): Promise<string | null> {
-  const { data, error } = await supabase
+  // Gunakan supabaseAdmin agar tidak diblokir RLS saat baca session token
+  const { data, error } = await supabaseAdmin
     .from('session')
     .select('value')
     .eq('key', key)

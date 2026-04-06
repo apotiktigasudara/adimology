@@ -43,23 +43,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, summary: [], signals: [], params: { days, forwardDays, algoType } });
     }
 
-    // 2. Fetch SM rolling untuk forward lookup
-    const { data: smRows, error: smErr } = await sb
+    // 2. Ambil distinct trading dates dari SM rolling (efisien, tanpa limit 1000)
+    const { data: dateRows, error: dateErr } = await sb
       .from('v4_sm_rolling')
-      .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily')
+      .select('trade_date')
       .gte('trade_date', fromDateStr)
-      .order('trade_date', { ascending: true });
-    if (smErr) throw smErr;
+      .order('trade_date', { ascending: true })
+      .limit(5000);
+    if (dateErr) throw dateErr;
 
-    // Build lookup: ticker → date → sm_row
+    const allDates = [...new Set((dateRows || []).map((r: any) => r.trade_date))].sort();
+
+    // Hanya fetch SM data untuk ticker yang ada di algo signals (hemat quota)
+    const relevantTickers = [...new Set(algoRows.map(r => r.ticker))];
     const smMap: Record<string, Record<string, any>> = {};
-    for (const r of (smRows || [])) {
-      if (!smMap[r.ticker]) smMap[r.ticker] = {};
-      smMap[r.ticker][r.trade_date] = r;
-    }
 
-    // All sorted trading dates
-    const allDates = [...new Set((smRows || []).map(r => r.trade_date))].sort();
+    if (relevantTickers.length > 0) {
+      const { data: smRows, error: smErr } = await sb
+        .from('v4_sm_rolling')
+        .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily')
+        .gte('trade_date', fromDateStr)
+        .in('ticker', relevantTickers)
+        .limit(10000);
+      if (smErr) throw smErr;
+
+      for (const r of (smRows || [])) {
+        if (!smMap[r.ticker]) smMap[r.ticker] = {};
+        smMap[r.ticker][r.trade_date] = r;
+      }
+    }
 
     // 3. Per signal: compute forward net
     type Signal = {
@@ -78,8 +90,8 @@ export async function GET(request: NextRequest) {
       const signalDate = sig.msg_date.split('T')[0];
       const entryIdx   = allDates.indexOf(signalDate);
 
-      // If not enough forward data yet, mark PENDING
-      if (entryIdx < 0 || entryIdx + forwardDays > allDates.length - 1) {
+      // Jika tanggal sinyal tidak ada di SM rolling → skip (no data)
+      if (entryIdx < 0) {
         signals.push({
           ticker: sig.ticker, algo_name: sig.algo_name, algo_type: sig.algo_type,
           signal_date: signalDate, forward_net: 0, result: 'PENDING', forward_days_actual: 0,
@@ -88,6 +100,15 @@ export async function GET(request: NextRequest) {
       }
 
       const fwdDates = allDates.slice(entryIdx + 1, entryIdx + 1 + forwardDays);
+
+      // Butuh minimal 3 hari forward data, kalau kurang → PENDING (data belum cukup)
+      if (fwdDates.length < Math.min(3, forwardDays)) {
+        signals.push({
+          ticker: sig.ticker, algo_name: sig.algo_name, algo_type: sig.algo_type,
+          signal_date: signalDate, forward_net: 0, result: 'PENDING', forward_days_actual: fwdDates.length,
+        });
+        continue;
+      }
       let fwdNet = 0;
       for (const d of fwdDates) {
         const r = smMap[sig.ticker]?.[d];
