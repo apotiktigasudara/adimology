@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
     const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    const model = 'gemini-2.5-flash-preview-04-17';
+    const model = 'gemini-2.5-flash';
 
     let keyStatsContext = '';
     if (keyStatsData) {
