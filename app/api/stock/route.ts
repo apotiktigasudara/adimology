@@ -153,12 +153,11 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // 4. Save to Supabase ONLY if Single Date Query
-    if (isSingleDate) {
-      saveStockQuery({
+    // 4. Save to Supabase (always — pakai toDate sebagai key tanggal)
+    saveStockQuery({
         emiten,
         sector,
-        from_date: fromDate,
+        from_date: toDate,
         to_date: toDate,
         bandar: brokerData.bandar,
         barang_bandar: brokerData.barangBandar,
@@ -176,7 +175,6 @@ export async function POST(request: NextRequest) {
         target_realistis: calculated.targetRealistis1,
         target_max: calculated.targetMax,
       }).catch((err) => console.error('Failed to save to Supabase:', err));
-    }
 
     return NextResponse.json(result);
   } catch (error) {

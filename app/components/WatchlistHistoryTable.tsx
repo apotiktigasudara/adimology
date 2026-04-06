@@ -8,6 +8,11 @@ interface AgentStory {
   emiten: string;
   status: string;
   kesimpulan?: string;
+  matriks_story?: any[];
+  swot_analysis?: any;
+  checklist_katalis?: any[];
+  strategi_trading?: any;
+  keystat_signal?: string;
   created_at: string;
 }
 
@@ -15,6 +20,9 @@ function AIStoryHistory() {
   const [stories, setStories] = useState<AgentStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [detail, setDetail] = useState<AgentStory | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/analyze-story?all=true')
@@ -24,9 +32,19 @@ function AIStoryHistory() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = filter
-    ? stories.filter(s => s.emiten.includes(filter.toUpperCase()))
-    : stories;
+  const loadDetail = async (emiten: string, id: number) => {
+    if (expanded === id) { setExpanded(null); setDetail(null); return; }
+    setExpanded(id); setDetailLoading(true);
+    try {
+      const r = await fetch(`/api/analyze-story?emiten=${emiten}`);
+      const j = await r.json();
+      const found = Array.isArray(j.data) ? j.data.find((x: any) => x.id === id) : null;
+      setDetail(found || null);
+    } catch { setDetail(null); }
+    finally { setDetailLoading(false); }
+  };
+
+  const filtered = filter ? stories.filter(s => s.emiten.includes(filter.toUpperCase())) : stories;
 
   const fmtDate = (iso: string) => {
     const d = new Date(iso);
@@ -37,13 +55,10 @@ function AIStoryHistory() {
   return (
     <div>
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
-        <input
-          placeholder="Filter emiten..."
-          value={filter}
+        <input placeholder="Filter emiten..." value={filter}
           onChange={e => setFilter(e.target.value.toUpperCase())}
           style={{ padding: '0.35rem 0.65rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
-          maxLength={6}
-        />
+          maxLength={6} />
         <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{filtered.length} analisa</span>
       </div>
 
@@ -56,16 +71,78 @@ function AIStoryHistory() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {filtered.map(s => (
-            <div key={s.id} style={{
-              padding: '0.75rem 1rem', background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)', borderRadius: '10px',
-              display: 'grid', gridTemplateColumns: '80px 120px 1fr', gap: '0.75rem', alignItems: 'center'
-            }}>
-              <span style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>{s.emiten}</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{fmtDate(s.created_at)}</span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {s.kesimpulan || '—'}
-              </span>
+            <div key={s.id}>
+              {/* Row */}
+              <div onClick={() => loadDetail(s.emiten, s.id)} style={{
+                padding: '0.75rem 1rem', background: 'var(--bg-card)', cursor: 'pointer',
+                border: `1px solid ${expanded === s.id ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                borderRadius: expanded === s.id ? '10px 10px 0 0' : '10px',
+                display: 'grid', gridTemplateColumns: '80px 130px 1fr 24px', gap: '0.75rem', alignItems: 'center',
+                transition: 'border-color 0.2s',
+              }}>
+                <span style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>{s.emiten}</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{fmtDate(s.created_at)}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {s.kesimpulan || '—'}
+                </span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{expanded === s.id ? '▲' : '▼'}</span>
+              </div>
+
+              {/* Expanded detail */}
+              {expanded === s.id && (
+                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--accent-primary)', borderTop: 'none', borderRadius: '0 0 10px 10px' }}>
+                  {detailLoading ? (
+                    <div className="spinner" style={{ margin: '1rem auto', width: '20px', height: '20px' }}></div>
+                  ) : detail ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem' }}>
+                      {/* Kesimpulan */}
+                      {detail.kesimpulan && (
+                        <div>
+                          <div style={{ fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '0.25rem' }}>Kesimpulan</div>
+                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{detail.kesimpulan}</div>
+                        </div>
+                      )}
+                      {/* Keystat signal */}
+                      {detail.keystat_signal && (
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#fbbf24', marginBottom: '0.25rem' }}>Key Statistics Signal</div>
+                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{detail.keystat_signal}</div>
+                        </div>
+                      )}
+                      {/* SWOT */}
+                      {detail.swot_analysis && (
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#38ef7d', marginBottom: '0.4rem' }}>SWOT Analysis</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                            {(['strengths','weaknesses','opportunities','threats'] as const).map(k => (
+                              <div key={k} style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: k === 'strengths' || k === 'opportunities' ? '#38ef7d' : '#f5576c', marginBottom: '0.25rem', textTransform: 'uppercase' }}>{k}</div>
+                                {(detail.swot_analysis[k] || []).map((item: string, i: number) => (
+                                  <div key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginBottom: '0.2rem' }}>• {item}</div>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Strategi */}
+                      {detail.strategi_trading && (
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '0.25rem' }}>Strategi Trading</div>
+                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            {detail.strategi_trading.tipe_saham && <div>Tipe: <b>{detail.strategi_trading.tipe_saham}</b></div>}
+                            {detail.strategi_trading.target_entry && <div>Entry: <b>{detail.strategi_trading.target_entry}</b></div>}
+                            {detail.strategi_trading.exit_strategy?.take_profit && <div style={{ color: '#38ef7d' }}>TP: {detail.strategi_trading.exit_strategy.take_profit}</div>}
+                            {detail.strategi_trading.exit_strategy?.stop_loss && <div style={{ color: '#f5576c' }}>SL: {detail.strategi_trading.exit_strategy.stop_loss}</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Gagal memuat detail</div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

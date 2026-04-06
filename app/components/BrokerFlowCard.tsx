@@ -275,9 +275,18 @@ function BrokerFlowRow({
         {formatNetValue(activity.net_value)}
       </td>
       <td className="consistency">
-        <span className="consistency-badge">
-          {activity.buy_days}/{activity.active_days}
+        <span className="consistency-badge" title={`Buy ${activity.buy_days} dari ${activity.active_days} hari aktif`}>
+          {activity.buy_days != null && activity.active_days != null
+            ? `${activity.buy_days}/${activity.active_days}`
+            : activity.consistency_pct != null
+              ? `${parseFloat(activity.consistency_pct).toFixed(0)}%`
+              : '-'}
         </span>
+        {activity.consistency_pct != null && activity.buy_days != null && (
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', marginTop: '2px', textAlign: 'center' }}>
+            {parseFloat(activity.consistency_pct).toFixed(0)}%
+          </div>
+        )}
       </td>
     </tr>
   );
