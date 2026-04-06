@@ -3,6 +3,77 @@
 import { useState, useEffect } from 'react';
 import { exportHistoryToPDF, exportHistoryByEmitenToPDF } from '@/lib/pdfExport';
 
+interface AgentStory {
+  id: number;
+  emiten: string;
+  status: string;
+  kesimpulan?: string;
+  created_at: string;
+}
+
+function AIStoryHistory() {
+  const [stories, setStories] = useState<AgentStory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('');
+
+  useEffect(() => {
+    fetch('/api/analyze-story?all=true')
+      .then(r => r.json())
+      .then(j => { setStories(j.data || []); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = filter
+    ? stories.filter(s => s.emiten.includes(filter.toUpperCase()))
+    : stories;
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })
+      + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center' }}>
+        <input
+          placeholder="Filter emiten..."
+          value={filter}
+          onChange={e => setFilter(e.target.value.toUpperCase())}
+          style={{ padding: '0.35rem 0.65rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
+          maxLength={6}
+        />
+        <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{filtered.length} analisa</span>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem' }}><div className="spinner" style={{ margin: '0 auto' }}></div></div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', borderRadius: '12px' }}>
+          Belum ada riwayat AI Analisa
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {filtered.map(s => (
+            <div key={s.id} style={{
+              padding: '0.75rem 1rem', background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)', borderRadius: '10px',
+              display: 'grid', gridTemplateColumns: '80px 120px 1fr', gap: '0.75rem', alignItems: 'center'
+            }}>
+              <span style={{ fontWeight: 700, color: 'var(--accent-primary)', fontSize: '0.9rem' }}>{s.emiten}</span>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{fmtDate(s.created_at)}</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {s.kesimpulan || '—'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface AnalysisRecord {
   id: number;
   from_date: string;
@@ -23,6 +94,7 @@ interface AnalysisRecord {
 }
 
 export default function WatchlistHistoryTable() {
+  const [activeTab, setActiveTab] = useState<'kalkulasi' | 'ai'>('kalkulasi');
   const [data, setData] = useState<AnalysisRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -107,6 +179,22 @@ export default function WatchlistHistoryTable() {
 
   return (
     <div className="glass-card-static">
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+        {([['kalkulasi', '📊 Riwayat Kalkulasi'], ['ai', '🤖 Riwayat AI Analisa']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setActiveTab(key)} style={{
+            padding: '0.45rem 1rem', borderRadius: '8px', border: '1px solid',
+            borderColor: activeTab === key ? 'var(--accent-primary)' : 'var(--border-color)',
+            background: activeTab === key ? 'rgba(100,149,237,0.15)' : 'var(--bg-card)',
+            color: activeTab === key ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            fontWeight: activeTab === key ? 600 : 400, fontSize: '0.82rem', cursor: 'pointer',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {activeTab === 'ai' && <AIStoryHistory />}
+      {activeTab === 'kalkulasi' && <>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2>📊 Watchlist Analysis History</h2>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
@@ -522,6 +610,7 @@ export default function WatchlistHistoryTable() {
           </div>
         </>
       )}
+      </>}
     </div>
   );
 }

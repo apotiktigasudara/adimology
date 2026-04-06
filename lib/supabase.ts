@@ -33,9 +33,9 @@ export async function saveStockQuery(data: {
   target_realistis?: number;
   target_max?: number;
 }) {
-  const { data: result, error } = await supabase
+  const { data: result, error } = await supabaseAdmin
     .from('stock_queries')
-    .upsert([data], { onConflict: 'from_date,emiten' })
+    .upsert([{ ...data, status: 'success' }], { onConflict: 'from_date,emiten' })
     .select();
 
   if (error) {

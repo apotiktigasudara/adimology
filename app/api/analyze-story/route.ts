@@ -1,34 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAgentStory, getAgentStoriesByEmiten } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const emiten = searchParams.get('emiten')?.toUpperCase();
+  const all = searchParams.get('all') === 'true';
 
-  if (!emiten) {
-    return NextResponse.json({ error: 'Missing emiten parameter' }, { status: 400 });
+  // Return all completed stories (for history page)
+  if (all || !emiten) {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('agent_stories')
+        .select('id, emiten, status, kesimpulan, created_at')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return NextResponse.json({ success: true, data: data || [] });
+    } catch (error) {
+      return NextResponse.json({ success: false, error: 'Failed to fetch stories' }, { status: 500 });
+    }
   }
 
   try {
     const stories = await getAgentStoriesByEmiten(emiten);
-    
+
     if (!stories || stories.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         data: null,
         message: 'No analysis found'
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      data: stories 
+    return NextResponse.json({
+      success: true,
+      data: stories
     });
   } catch (error) {
     console.error('Error fetching agent story:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to fetch analysis' 
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch analysis'
     }, { status: 500 });
   }
 }
