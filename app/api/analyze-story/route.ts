@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     try {
       const { data, error } = await supabaseAdmin
         .from('agent_stories')
-        .select('id, emiten, status, kesimpulan, created_at')
+        .select('id, emiten, status, kesimpulan, created_at, matriks_story, swot_analysis, checklist_katalis, strategi_trading, keystat_signal')
         .eq('status', 'completed')
         .order('created_at', { ascending: false })
         .limit(100);

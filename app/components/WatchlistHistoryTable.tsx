@@ -21,8 +21,6 @@ function AIStoryHistory() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [detail, setDetail] = useState<AgentStory | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/analyze-story?all=true')
@@ -32,16 +30,8 @@ function AIStoryHistory() {
       .finally(() => setLoading(false));
   }, []);
 
-  const loadDetail = async (emiten: string, id: number) => {
-    if (expanded === id) { setExpanded(null); setDetail(null); return; }
-    setExpanded(id); setDetailLoading(true);
-    try {
-      const r = await fetch(`/api/analyze-story?emiten=${emiten}`);
-      const j = await r.json();
-      const found = Array.isArray(j.data) ? j.data.find((x: any) => x.id === id) : null;
-      setDetail(found || null);
-    } catch { setDetail(null); }
-    finally { setDetailLoading(false); }
+  const loadDetail = (id: number) => {
+    setExpanded(prev => prev === id ? null : id);
   };
 
   const filtered = filter ? stories.filter(s => s.emiten.includes(filter.toUpperCase())) : stories;
@@ -73,7 +63,7 @@ function AIStoryHistory() {
           {filtered.map(s => (
             <div key={s.id}>
               {/* Row */}
-              <div onClick={() => loadDetail(s.emiten, s.id)} style={{
+              <div onClick={() => loadDetail(s.id)} style={{
                 padding: '0.75rem 1rem', background: 'var(--bg-card)', cursor: 'pointer',
                 border: `1px solid ${expanded === s.id ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                 borderRadius: expanded === s.id ? '10px 10px 0 0' : '10px',
@@ -91,56 +81,50 @@ function AIStoryHistory() {
               {/* Expanded detail */}
               {expanded === s.id && (
                 <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--accent-primary)', borderTop: 'none', borderRadius: '0 0 10px 10px' }}>
-                  {detailLoading ? (
-                    <div className="spinner" style={{ margin: '1rem auto', width: '20px', height: '20px' }}></div>
-                  ) : detail ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem' }}>
-                      {/* Kesimpulan */}
-                      {detail.kesimpulan && (
-                        <div>
-                          <div style={{ fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '0.25rem' }}>Kesimpulan</div>
-                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{detail.kesimpulan}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.82rem' }}>
+                    {/* Kesimpulan */}
+                    {s.kesimpulan && (
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--accent-primary)', marginBottom: '0.25rem' }}>Kesimpulan</div>
+                        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{s.kesimpulan}</div>
+                      </div>
+                    )}
+                    {/* Keystat signal */}
+                    {s.keystat_signal && (
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#fbbf24', marginBottom: '0.25rem' }}>Key Statistics Signal</div>
+                        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{s.keystat_signal}</div>
+                      </div>
+                    )}
+                    {/* SWOT */}
+                    {s.swot_analysis && (
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#38ef7d', marginBottom: '0.4rem' }}>SWOT Analysis</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                          {(['strengths','weaknesses','opportunities','threats'] as const).map(k => (
+                            <div key={k} style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: k === 'strengths' || k === 'opportunities' ? '#38ef7d' : '#f5576c', marginBottom: '0.25rem', textTransform: 'uppercase' }}>{k}</div>
+                              {(s.swot_analysis[k] || []).map((item: string, i: number) => (
+                                <div key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginBottom: '0.2rem' }}>• {item}</div>
+                              ))}
+                            </div>
+                          ))}
                         </div>
-                      )}
-                      {/* Keystat signal */}
-                      {detail.keystat_signal && (
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#fbbf24', marginBottom: '0.25rem' }}>Key Statistics Signal</div>
-                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{detail.keystat_signal}</div>
+                      </div>
+                    )}
+                    {/* Strategi */}
+                    {s.strategi_trading && (
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '0.25rem' }}>Strategi Trading</div>
+                        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          {s.strategi_trading.tipe_saham && <div>Tipe: <b>{s.strategi_trading.tipe_saham}</b></div>}
+                          {s.strategi_trading.target_entry && <div>Entry: <b>{s.strategi_trading.target_entry}</b></div>}
+                          {s.strategi_trading.exit_strategy?.take_profit && <div style={{ color: '#38ef7d' }}>TP: {s.strategi_trading.exit_strategy.take_profit}</div>}
+                          {s.strategi_trading.exit_strategy?.stop_loss && <div style={{ color: '#f5576c' }}>SL: {s.strategi_trading.exit_strategy.stop_loss}</div>}
                         </div>
-                      )}
-                      {/* SWOT */}
-                      {detail.swot_analysis && (
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#38ef7d', marginBottom: '0.4rem' }}>SWOT Analysis</div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                            {(['strengths','weaknesses','opportunities','threats'] as const).map(k => (
-                              <div key={k} style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: k === 'strengths' || k === 'opportunities' ? '#38ef7d' : '#f5576c', marginBottom: '0.25rem', textTransform: 'uppercase' }}>{k}</div>
-                                {(detail.swot_analysis[k] || []).map((item: string, i: number) => (
-                                  <div key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginBottom: '0.2rem' }}>• {item}</div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Strategi */}
-                      {detail.strategi_trading && (
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#a78bfa', marginBottom: '0.25rem' }}>Strategi Trading</div>
-                          <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                            {detail.strategi_trading.tipe_saham && <div>Tipe: <b>{detail.strategi_trading.tipe_saham}</b></div>}
-                            {detail.strategi_trading.target_entry && <div>Entry: <b>{detail.strategi_trading.target_entry}</b></div>}
-                            {detail.strategi_trading.exit_strategy?.take_profit && <div style={{ color: '#38ef7d' }}>TP: {detail.strategi_trading.exit_strategy.take_profit}</div>}
-                            {detail.strategi_trading.exit_strategy?.stop_loss && <div style={{ color: '#f5576c' }}>SL: {detail.strategi_trading.exit_strategy.stop_loss}</div>}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ color: 'var(--text-secondary)', textAlign: 'center' }}>Gagal memuat detail</div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
