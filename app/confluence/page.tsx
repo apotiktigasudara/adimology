@@ -21,6 +21,8 @@ interface ConfluenceRow {
   sm_score: number;
   mf_score: number;
   algo_score: number;
+  nbsa_total: number;
+  nbsa_score: number;
   days_data: number;
 }
 
@@ -314,7 +316,7 @@ export default function ConfluencePage() {
           }}>
             <thead>
               <tr style={{ background: 'rgba(255,255,255,0.03)' }}>
-                {['#', 'Ticker', 'Score', 'Status', 'Streak', 'SM Net', 'MF Net', 'Algo', 'Position', 'Hari'].map(h => (
+                {['#', 'Ticker', 'Score', 'Status', 'Streak', 'SM Net', 'MF Net', 'Algo', 'Asing', 'Position', 'Hari'].map(h => (
                   <th key={h} style={{
                     padding: '0.75rem 1rem', textAlign: 'left',
                     color: 'var(--text-secondary)', fontWeight: 600,
@@ -431,6 +433,17 @@ export default function ConfluencePage() {
                       )}
                     </td>
 
+                    {/* NBSA / Asing */}
+                    <td style={{
+                      padding: '0.75rem 1rem', fontWeight: 500,
+                      color: (row.nbsa_total ?? 0) >= 0 ? '#38ef7d' : '#f5576c',
+                    }}>
+                      {(row.nbsa_total ?? 0) !== 0
+                        ? `${(row.nbsa_total ?? 0) >= 0 ? '+' : ''}${(row.nbsa_total ?? 0).toFixed(1)}M`
+                        : <span style={{ color: 'var(--text-secondary)' }}>—</span>
+                      }
+                    </td>
+
                     {/* Position size */}
                     <td style={{ padding: '0.75rem 1rem' }}>
                       <span style={{
@@ -472,7 +485,7 @@ export default function ConfluencePage() {
             display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem',
           }}>
             <span>Menampilkan {filtered.length} ticker · Periode {days} hari</span>
-            <span>SM Score 0–50 · MF Score 0–30 · Algo Score 0–20</span>
+            <span>SM Score 0–50 · MF Score 0–30 · Algo Score 0–20 · Asing Score ±10</span>
           </div>
         )}
       </div>

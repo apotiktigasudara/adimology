@@ -23,6 +23,11 @@ const PUBLIC_PATHS = [
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Allow CORS preflight (OPTIONS) for all routes — handled by route handlers
+  if (request.method === 'OPTIONS') {
+    return NextResponse.next();
+  }
+
   // 1. Allow background jobs/cron via secret token
   const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;

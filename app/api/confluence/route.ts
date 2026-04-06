@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const [smRes, algoRes] = await Promise.all([
       supabase
         .from('v4_sm_rolling')
-        .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily')
+        .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily, nbsa_daily')
         .gte('trade_date', fromDateStr)
         .order('trade_date', { ascending: true }),
       supabase
@@ -70,12 +70,13 @@ export async function GET(request: NextRequest) {
 
     const results = Object.entries(tickerRows).map(([ticker, rows]) => {
       // Aggregate totals
-      let sm_total = 0, bm_total = 0, mfp_total = 0, mfn_total = 0;
+      let sm_total = 0, bm_total = 0, mfp_total = 0, mfn_total = 0, nbsa_total = 0;
       for (const r of rows) {
-        sm_total  += r.sm_daily  || 0;
-        bm_total  += r.bm_daily  || 0;
-        mfp_total += r.mfp_daily || 0;
-        mfn_total += r.mfn_daily || 0;
+        sm_total   += r.sm_daily   || 0;
+        bm_total   += r.bm_daily   || 0;
+        mfp_total  += r.mfp_daily  || 0;
+        mfn_total  += r.mfn_daily  || 0;
+        nbsa_total += r.nbsa_daily || 0;
       }
 
       const sm_net = sm_total  - bm_total;
@@ -95,7 +96,10 @@ export async function GET(request: NextRequest) {
       const algo_neg   = algoCounts[ticker]?.neg ?? 0;
       const algo_score = clamp((algo_pos - algo_neg) * 4, 0, 20);
 
-      const confluence_score = Math.round(sm_score + mf_score + algo_score);
+      // NBSA score: +10 if net buy asing, -10 if net sell, scaled by magnitude
+      const nbsa_score = clamp(Math.round((nbsa_total / Math.max(Math.abs(nbsa_total), 1)) * Math.min(Math.abs(nbsa_total) * 2, 10)), -10, 10);
+
+      const confluence_score = Math.round(clamp(sm_score + mf_score + algo_score + nbsa_score, 0, 100));
 
       // Streak: count consecutive days (newest→oldest) where net SM OR net MF > 0
       let streak = 0;
@@ -144,8 +148,10 @@ export async function GET(request: NextRequest) {
         algo_neg,
         sm_score:   Math.round(sm_score   * 10) / 10,
         mf_score:   Math.round(mf_score   * 10) / 10,
-        algo_score: Math.round(algo_score * 10) / 10,
-        days_data:  rows.length,
+        algo_score:  Math.round(algo_score  * 10) / 10,
+        nbsa_total:  Math.round(nbsa_total  * 100) / 100,
+        nbsa_score:  nbsa_score,
+        days_data:   rows.length,
       };
     });
 
