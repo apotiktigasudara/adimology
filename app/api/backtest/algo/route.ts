@@ -43,35 +43,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, summary: [], signals: [], params: { days, forwardDays, algoType } });
     }
 
-    // 2. Ambil distinct trading dates dari SM rolling (efisien, tanpa limit 1000)
-    const { data: dateRows, error: dateErr } = await sb
-      .from('v4_sm_rolling')
-      .select('trade_date')
-      .gte('trade_date', fromDateStr)
-      .order('trade_date', { ascending: true })
-      .limit(5000);
-    if (dateErr) throw dateErr;
-
-    const allDates = [...new Set((dateRows || []).map((r: any) => r.trade_date))].sort();
-
-    // Hanya fetch SM data untuk ticker yang ada di algo signals (hemat quota)
+    // 2. Hanya fetch SM data untuk ticker yang ada di algo signals (hemat quota + hindari limit)
     const relevantTickers = [...new Set(algoRows.map(r => r.ticker))];
     const smMap: Record<string, Record<string, any>> = {};
 
     if (relevantTickers.length > 0) {
-      const { data: smRows, error: smErr } = await sb
-        .from('v4_sm_rolling')
-        .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily')
-        .gte('trade_date', fromDateStr)
-        .in('ticker', relevantTickers)
-        .limit(10000);
-      if (smErr) throw smErr;
-
-      for (const r of (smRows || [])) {
-        if (!smMap[r.ticker]) smMap[r.ticker] = {};
-        smMap[r.ticker][r.trade_date] = r;
+      // Batch per 50 ticker untuk hindari URL terlalu panjang
+      const batchSize = 50;
+      for (let i = 0; i < relevantTickers.length; i += batchSize) {
+        const batch = relevantTickers.slice(i, i + batchSize);
+        const { data: smRows, error: smErr } = await sb
+          .from('v4_sm_rolling')
+          .select('ticker, trade_date, sm_daily, bm_daily, mfp_daily, mfn_daily')
+          .gte('trade_date', fromDateStr)
+          .in('ticker', batch)
+          .limit(10000);
+        if (smErr) throw smErr;
+        for (const r of (smRows || [])) {
+          if (!smMap[r.ticker]) smMap[r.ticker] = {};
+          smMap[r.ticker][r.trade_date] = r;
+        }
       }
     }
+
+    // Derive allDates dari SM data yang sudah di-fetch (bukan query terpisah)
+    const allDates = [...new Set(
+      Object.values(smMap).flatMap(byDate => Object.keys(byDate))
+    )].sort();
 
     // 3. Per signal: compute forward net
     type Signal = {
