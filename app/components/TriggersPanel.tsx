@@ -47,9 +47,13 @@ function timeAgo(iso: string) {
 
 function fmtDate(iso: string) {
   if (!iso) return '-';
-  const d = new Date(iso);
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })
-    + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  // Jika tidak ada tz info (naive WIB dari bot lama), anggap WIB (+07:00)
+  const normalized = (!iso.includes('Z') && !iso.match(/[+-]\d{2}:?\d{2}$/))
+    ? iso + '+07:00'
+    : iso;
+  const d = new Date(normalized);
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', timeZone: 'Asia/Jakarta' })
+    + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
 }
 
 function lots(n: number) {

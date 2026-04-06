@@ -213,7 +213,7 @@ export async function saveWatchlistAnalysis(data: {
   status?: string;
   error_message?: string;
 }) {
-  const { data: result, error } = await supabase
+  const { data: result, error } = await supabaseAdmin
     .from('stock_queries')
     .upsert([data], { onConflict: 'from_date,emiten' })
     .select();
@@ -240,7 +240,7 @@ export async function getWatchlistAnalysisHistory(filters?: {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }) {
-  let query = supabase
+  let query = supabaseAdmin
     .from('stock_queries')
     .select('*', { count: 'exact' });
 
