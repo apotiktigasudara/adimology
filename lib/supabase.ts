@@ -672,9 +672,9 @@ export async function getEmitenSummaryStats(limit: number = 5) {
   // 1. Get all successful analysis records
   // We need to fetch enough records to cover the 'limit' for each emiten
   // Since we don't know which emitens have recent data, we'll fetch a larger set first
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('stock_queries')
-    .select('emiten, sector, target_realistis, target_max, max_harga, status, from_date, bandar')
+    .select('emiten, sector, target_realistis, target_max, max_harga, harga, status, from_date, bandar')
     .eq('status', 'success')
     .order('from_date', { ascending: false });
 
@@ -705,10 +705,12 @@ export async function getEmitenSummaryStats(limit: number = 5) {
     const bandarCounts: Record<string, number> = {};
     
     records.forEach(r => {
-      if (r.max_harga && r.target_realistis && r.max_harga >= r.target_realistis) {
+      // Gunakan max_harga jika ada, fallback ke harga saat analisa
+      const effectiveHarga = r.max_harga || r.harga;
+      if (effectiveHarga && r.target_realistis && effectiveHarga >= r.target_realistis) {
         hitR1++;
       }
-      if (r.max_harga && r.target_max && r.max_harga >= r.target_max) {
+      if (effectiveHarga && r.target_max && effectiveHarga >= r.target_max) {
         hitMax++;
       }
       

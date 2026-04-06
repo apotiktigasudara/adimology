@@ -49,11 +49,11 @@ type SmRow = {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const threshold   = Math.min(Math.max(parseInt(searchParams.get('threshold')    || '60'), 30), 95);
-  const forwardDays = Math.min(Math.max(parseInt(searchParams.get('forward_days') || '10'), 3), 30);
-  const lookBack    = Math.min(Math.max(parseInt(searchParams.get('look_back')    || '90'), 30), 180);
+  const forwardDays = Math.min(Math.max(parseInt(searchParams.get('forward_days') || '5'),  3), 30);
+  const lookBack    = Math.min(Math.max(parseInt(searchParams.get('look_back')    || '30'), 14), 180);
 
   // Need extra days at the start for rolling window + forward calculation
-  const totalDays = lookBack + 7 + forwardDays;
+  const totalDays = lookBack + 3 + forwardDays;
   const fromDate  = new Date();
   fromDate.setDate(fromDate.getDate() - totalDays);
   const fromDateStr = fromDate.toISOString().split('T')[0];
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     const signals: Signal[] = [];
 
     for (const [ticker, rows] of Object.entries(byTicker)) {
-      if (rows.length < 8) continue; // need at least 8 days
+      if (rows.length < 3) continue; // need at least 3 days
 
       // Build date→row map for forward lookup
       const rowByDate: Record<string, SmRow> = {};
@@ -105,9 +105,9 @@ export async function GET(request: NextRequest) {
 
       let prevScore = -1;
 
-      // Slide 7-day window
-      for (let i = 6; i < rows.length; i++) {
-        const window = rows.slice(i - 6, i + 1); // 7 rows
+      // Slide 3-day window
+      for (let i = 2; i < rows.length; i++) {
+        const window = rows.slice(i - 2, i + 1); // 3 rows
 
         let sm = 0, bm = 0, mfp = 0, mfn = 0;
         for (const r of window) {

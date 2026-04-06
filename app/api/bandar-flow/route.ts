@@ -76,10 +76,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Join NBSA (nbsa_daily) dari v4_sm_rolling untuk tanggal yang sama
+    const tickers = (data ?? []).map((r: any) => r.ticker);
+    let nbsaMap: Record<string, number> = {};
+    if (tickers.length > 0) {
+      const { data: nbsaRows } = await sb
+        .from('v4_sm_rolling')
+        .select('ticker, nbsa_daily')
+        .eq('trade_date', date)
+        .in('ticker', tickers);
+      if (nbsaRows) {
+        for (const r of nbsaRows) {
+          nbsaMap[r.ticker] = r.nbsa_daily ?? 0;
+        }
+      }
+    }
+
+    const enriched = (data ?? []).map((r: any) => ({
+      ...r,
+      nbsa_daily: nbsaMap[r.ticker] ?? 0,
+    }));
+
     return NextResponse.json({
       date,
-      count: data?.length ?? 0,
-      data:  (data ?? []) as BandarFlow[],
+      count: enriched.length,
+      data:  enriched as BandarFlow[],
     });
 
   } catch (err) {
