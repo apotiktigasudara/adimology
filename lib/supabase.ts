@@ -755,7 +755,7 @@ import type { WatchlistGroup } from './types';
  * Check if there is any watchlist cache in the database
  */
 export async function hasWatchlistCache(): Promise<boolean> {
-  const { count, error } = await supabase
+  const { count, error } = await supabaseAdmin
     .from('watchlist_groups')
     .select('*', { count: 'exact', head: true });
 
@@ -767,7 +767,7 @@ export async function hasWatchlistCache(): Promise<boolean> {
  * Get cached watchlist groups from local database
  */
 export async function getCachedWatchlistGroups(): Promise<{ groups: WatchlistGroup[]; synced_at: string | null }> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('watchlist_groups')
     .select('*')
     .order('is_default', { ascending: false })
@@ -811,7 +811,7 @@ export async function saveCachedWatchlistGroups(groups: WatchlistGroup[]): Promi
     synced_at: now,
   }));
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('watchlist_groups')
     .upsert(rows, { onConflict: 'watchlist_id' });
 
@@ -823,7 +823,7 @@ export async function saveCachedWatchlistGroups(groups: WatchlistGroup[]): Promi
   // Remove groups that no longer exist in Stockbit
   const activeIds = groups.map(g => g.watchlist_id);
   if (activeIds.length > 0) {
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabaseAdmin
       .from('watchlist_groups')
       .delete()
       .not('watchlist_id', 'in', `(${activeIds.join(',')})`);
@@ -839,7 +839,7 @@ export async function saveCachedWatchlistGroups(groups: WatchlistGroup[]): Promi
  */
 export async function getCachedWatchlistItems(watchlistId: number): Promise<{ items: any[]; synced_at: string | null }> {
   // First get the internal group id
-  const { data: group, error: groupError } = await supabase
+  const { data: group, error: groupError } = await supabaseAdmin
     .from('watchlist_groups')
     .select('id, synced_at')
     .eq('watchlist_id', watchlistId)
@@ -849,7 +849,7 @@ export async function getCachedWatchlistItems(watchlistId: number): Promise<{ it
     return { items: [], synced_at: null };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('watchlist_items')
     .select(`
       stockbit_item_id,
@@ -895,7 +895,7 @@ export async function saveCachedWatchlistItems(
   items: any[]
 ): Promise<void> {
   // Get or create group record
-  const { data: group, error: groupError } = await supabase
+  const { data: group, error: groupError } = await supabaseAdmin
     .from('watchlist_groups')
     .select('id')
     .eq('watchlist_id', watchlistId)
@@ -920,7 +920,7 @@ export async function saveCachedWatchlistItems(
     }));
 
     // Upsert into emiten_cache
-    const { error: emitenError } = await supabase
+    const { error: emitenError } = await supabaseAdmin
       .from('emiten_cache')
       .upsert(symbolsData, { onConflict: 'symbol' });
 
@@ -938,9 +938,9 @@ export async function saveCachedWatchlistItems(
     }));
 
     // Reset items for this group and insert new associations
-    await supabase.from('watchlist_items').delete().eq('watchlist_group_id', group.id);
+    await supabaseAdmin.from('watchlist_items').delete().eq('watchlist_group_id', group.id);
 
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await supabaseAdmin
       .from('watchlist_items')
       .insert(watchlistRows);
 
@@ -951,7 +951,7 @@ export async function saveCachedWatchlistItems(
   }
 
   // Update group synced_at
-  await supabase
+  await supabaseAdmin
     .from('watchlist_groups')
     .update({ synced_at: now })
     .eq('id', group.id);
@@ -961,7 +961,7 @@ export async function saveCachedWatchlistItems(
  * Delete a cached watchlist item by symbol from a group
  */
 export async function deleteCachedWatchlistItem(watchlistId: number, symbol: string): Promise<void> {
-  const { data: group } = await supabase
+  const { data: group } = await supabaseAdmin
     .from('watchlist_groups')
     .select('id')
     .eq('watchlist_id', watchlistId)
@@ -969,7 +969,7 @@ export async function deleteCachedWatchlistItem(watchlistId: number, symbol: str
 
   if (!group) return;
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('watchlist_items')
     .delete()
     .eq('watchlist_group_id', group.id)
