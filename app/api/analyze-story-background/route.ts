@@ -12,7 +12,7 @@ import {
   appendBackgroundJobLogEntry,
   updateBackgroundJobLog,
 } from '@/lib/supabase';
-import { GoogleGenAI, ThinkingLevel } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export const maxDuration = 60;
 
@@ -115,7 +115,6 @@ Berikan analisis dalam format JSON dengan struktur berikut (PASTIKAN HANYA OUTPU
 
     const responseStream = await (ai.models as any).generateContentStream({
       model,
-      config: { thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH } },
       contents,
       tools,
     });
