@@ -634,7 +634,7 @@ export async function getLatestBackgroundJobLog(jobName: string) {
  * Get a profile setting by key
  */
 export async function getProfileSetting(key: string): Promise<string | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profile')
     .select('value')
     .eq('key', key)
@@ -648,7 +648,7 @@ export async function getProfileSetting(key: string): Promise<string | null> {
  * Set a profile setting (upsert)
  */
 export async function setProfileSetting(key: string, value: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profile')
     .upsert(
       { key, value, updated_at: new Date().toISOString() },
