@@ -77,6 +77,14 @@ export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccu
               {fmtMiliar(data.net_value_10d)}
             </span>
           </div>
+          {data.nbsa_daily !== undefined && data.nbsa_daily !== 0 && (
+            <div className="bf-row">
+              <span className="bf-row-label">Asing (NBSA)</span>
+              <span className={signClass(data.nbsa_daily ?? 0)}>
+                {(data.nbsa_daily ?? 0) >= 0 ? '+' : ''}{(data.nbsa_daily ?? 0).toFixed(2)} M
+              </span>
+            </div>
+          )}
           <div className="bf-row">
             <span className="bf-row-label">Velocity (3D/10D)</span>
             <span className="bf-row-value">

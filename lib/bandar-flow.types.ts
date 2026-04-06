@@ -54,6 +54,9 @@ export interface BandarFlow {
   algo_triggered: boolean;
   algo_arah:      string | null;   // "bullish" | "bearish" | null
 
+  // Net Buy Sell Asing harian (Miliar IDR) — dari v4_sm_rolling join
+  nbsa_daily?: number;
+
   // Hasil kombinasi
   arah:            'ACCUM' | 'DISTRIB' | 'NEUTRAL';
   combined_score:  number;   // 0–100
