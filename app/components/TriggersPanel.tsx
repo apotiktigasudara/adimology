@@ -82,7 +82,15 @@ export default function TriggersPanel({ activeTab }: Props) {
   const [filterArah,    setFilterArah]    = useState('');
   const [filterTrigger, setFilterTrigger] = useState('');
   const [filterTicker,  setFilterTicker]  = useState('');
-  const [filterDays,    setFilterDays]    = useState('7');
+  // trade signals: default 30 hari (oracle jarang fire); lainnya: 7 hari
+  const [filterDays,    setFilterDays]    = useState(() => activeTab === 'trade' ? '30' : '7');
+
+  // Reset filterDays ke default saat ganti tab
+  useEffect(() => {
+    setFilterDays(activeTab === 'trade' ? '30' : '7');
+    setFilterArah('');
+    setFilterTicker('');
+  }, [activeTab]);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError('');
