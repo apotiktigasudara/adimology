@@ -67,7 +67,8 @@ function lots(n: number) {
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
   if (abs >= 1_000)     return (n / 1_000).toFixed(0)     + 'K';
-  return String(n);
+  if (abs < 10)         return n.toFixed(2);
+  return n.toFixed(0);
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
