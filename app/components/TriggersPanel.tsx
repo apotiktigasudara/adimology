@@ -310,22 +310,36 @@ function TradeTable({ trades }: { trades: TradeSignal[] }) {
           </tr>
         </thead>
         <tbody>
-          {trades.map(t => (
-            <tr key={t.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <td style={tdStyle}>{fmtDate(t.signal_date)}</td>
-              <td style={{ ...tdStyle, fontWeight: 700 }}>{t.ticker}</td>
-              <td style={{ ...tdStyle, color: t.signal_type?.includes('BUY') ? '#38ef7d' : '#f5576c', fontWeight: 600 }}>
-                {t.signal_type}
-              </td>
-              <td style={tdStyle}>{t.entry_price ? `Rp${t.entry_price.toLocaleString('id-ID')}` : '-'}</td>
-              <td style={{ ...tdStyle, color: '#f5576c' }}>{t.sl_price  ? `Rp${t.sl_price.toLocaleString('id-ID')}` : '-'}</td>
-              <td style={{ ...tdStyle, color: '#38ef7d' }}>{t.tp1_price ? `Rp${t.tp1_price.toLocaleString('id-ID')}` : '-'}</td>
-              <td style={{ ...tdStyle, color: '#38ef7d' }}>{t.tp2_price ? `Rp${t.tp2_price.toLocaleString('id-ID')}` : '-'}</td>
-              <td style={tdStyle}>{t.sm_conf != null ? `${t.sm_conf}%` : '-'}</td>
-              <td style={tdStyle}>{t.oracle_score ?? '-'}</td>
-              <td style={{ ...tdStyle, fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{t.bandar_phase || '-'}</td>
-            </tr>
-          ))}
+          {trades.map(t => {
+            const isDistrib = t.bandar_phase?.includes('DISTRIBUTION');
+            const rp = (n: number | null) => n ? `Rp${n.toLocaleString('id-ID')}` : '-';
+            return (
+              <tr key={t.id} style={{
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                background: isDistrib ? 'rgba(245,87,108,0.04)' : undefined,
+              }}>
+                <td style={tdStyle}>{fmtDate(t.signal_date)}</td>
+                <td style={{ ...tdStyle, fontWeight: 700 }}>{t.ticker}</td>
+                <td style={{ ...tdStyle, color: '#a78bfa', fontWeight: 600 }}>{t.signal_type}</td>
+                <td style={tdStyle}>{rp(t.entry_price)}</td>
+                <td style={{ ...tdStyle, color: '#f5576c' }}>{rp(t.sl_price)}</td>
+                <td style={{ ...tdStyle, color: '#38ef7d' }}>{rp(t.tp1_price)}</td>
+                <td style={{ ...tdStyle, color: '#4ade80' }}>{rp(t.tp2_price)}</td>
+                <td style={tdStyle}>{t.sm_conf != null ? `${t.sm_conf}%` : '-'}</td>
+                <td style={{ ...tdStyle, color: (t.oracle_score ?? 0) >= 70 ? '#38ef7d' : (t.oracle_score ?? 0) >= 60 ? '#fbbf24' : 'var(--text-secondary)' }}>
+                  {t.oracle_score ?? '-'}
+                </td>
+                <td style={{ ...tdStyle, fontSize: '0.72rem' }}>
+                  <span style={{
+                    color: isDistrib ? '#f5576c' : 'var(--text-secondary)',
+                    fontWeight: isDistrib ? 600 : 400,
+                  }}>
+                    {isDistrib && '⚠️ '}{t.bandar_phase || '-'}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
