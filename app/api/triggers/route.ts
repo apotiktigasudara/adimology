@@ -8,11 +8,12 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const type    = searchParams.get('type') || 'bandar_alerts'; // bandar_alerts | trade_signals | algo_signals | sm_rolling | oracle
+  const type    = searchParams.get('type') || 'bandar_alerts'; // bandar_alerts | trade_signals | algo_signals | sm_rolling | oracle | bandar_flow
   const ticker  = searchParams.get('ticker')?.toUpperCase();
   const arah    = searchParams.get('arah');           // ACCUM | DISTRIB
   const trigger = searchParams.get('trigger');        // SM | BIG_SM | MF_PLUS | BIG_MF_PLUS | BAD_MONEY | MF_MINUS | BIG_MF_MINUS | ALGO
   const from    = searchParams.get('from');           // ISO date
+  const dedup   = searchParams.get('dedup') === 'true'; // dedup by ticker (show highest score only)
   const limit   = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
 
   try {
@@ -20,15 +21,26 @@ export async function GET(request: NextRequest) {
       let q = supabase
         .from('bandar_alerts')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        .order('combined_score', { ascending: false })  // highest score first untuk dedup
+        .limit(dedup ? 200 : limit);                    // fetch lebih banyak jika akan dedup
       if (ticker)  q = q.eq('ticker', ticker);
       if (arah)    q = q.eq('arah', arah);
       if (trigger) q = q.eq('trigger_type', trigger);
       if (from)    q = q.gte('created_at', from);
       const { data, error } = await q;
       if (error) throw error;
-      return NextResponse.json({ success: true, data });
+      // Dedup: satu ticker = satu alert dengan score tertinggi
+      let result = data || [];
+      if (dedup) {
+        const seen = new Set<string>();
+        result = result.filter(r => {
+          const key = r.ticker;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).slice(0, limit);
+      }
+      return NextResponse.json({ success: true, data: result });
     }
 
     if (type === 'trade_signals') {
@@ -49,7 +61,7 @@ export async function GET(request: NextRequest) {
         .from('v4_algo_signals')
         .select('*')
         .order('msg_date', { ascending: false })
-        .limit(limit);
+        .limit(dedup ? 500 : limit);
       if (ticker) q = q.eq('ticker', ticker);
       if (from)   q = q.gte('msg_date', from);
       if (arah) {
@@ -58,7 +70,19 @@ export async function GET(request: NextRequest) {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return NextResponse.json({ success: true, data });
+      // Dedup algo: 1 algo per ticker per 5-menit window (ticker punya 6+ pattern sekaligus)
+      let result = data || [];
+      if (dedup) {
+        const seen = new Set<string>();
+        result = result.filter(r => {
+          const window = r.msg_date ? r.msg_date.slice(0, 15) : ''; // YYYY-MM-DDTHH:MM → rounded 10m
+          const key = `${r.ticker}__${window}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).slice(0, limit);
+      }
+      return NextResponse.json({ success: true, data: result });
     }
 
     if (type === 'sm_rolling') {

@@ -123,6 +123,7 @@ export default function TriggersPanel({ activeTab }: Props) {
         setTrades(json.data || []);
       } else if (activeTab === 'algo') {
         params.set('type', 'algo_signals');
+        if (!filterTicker) params.set('dedup', 'true'); // dedup per ticker kecuali filter ticker spesifik
         const res  = await fetch(`/api/triggers?${params}`);
         const json = await res.json();
         setAlgos(json.data || []);
