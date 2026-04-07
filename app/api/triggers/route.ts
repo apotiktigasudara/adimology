@@ -87,6 +87,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data });
     }
 
+    if (type === 'bandar_flow') {
+      const tradeDate = searchParams.get('trade_date') || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+      let q = supabase
+        .from('bandar_flow')
+        .select('ticker,trade_date,arah,combined_score,signal_strength,intraday_sm_total,intraday_bm_total,intraday_mf_net,net_lots_10d,updated_at')
+        .eq('trade_date', tradeDate)
+        .order('updated_at', { ascending: false })
+        .limit(limit);
+      if (ticker) q = q.eq('ticker', ticker);
+      if (arah)   q = q.eq('arah', arah);
+      const { data, error } = await q;
+      if (error) throw error;
+      return NextResponse.json({ success: true, data });
+    }
+
     return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
 
   } catch (error) {

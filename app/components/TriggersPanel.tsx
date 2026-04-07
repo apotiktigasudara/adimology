@@ -5,6 +5,12 @@ import { supabase } from '@/lib/supabase';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface BandarFlow {
+  ticker: string; arah: string; combined_score: number; signal_strength: string;
+  intraday_sm_total: number; intraday_bm_total: number; intraday_mf_net: number;
+  net_lots_10d: number; trade_date: string; updated_at: string;
+}
+
 interface BandarAlert {
   id: number; ticker: string; arah: string; trigger_type: string;
   combined_score: number; signal_strength: string;
@@ -69,6 +75,7 @@ function lots(n: number) {
 interface Props { activeTab: string }
 
 export default function TriggersPanel({ activeTab }: Props) {
+  const [flows,   setFlows]   = useState<BandarFlow[]>([]);
   const [alerts,  setAlerts]  = useState<BandarAlert[]>([]);
   const [trades,  setTrades]  = useState<TradeSignal[]>([]);
   const [algos,   setAlgos]   = useState<AlgoSignal[]>([]);
@@ -80,7 +87,6 @@ export default function TriggersPanel({ activeTab }: Props) {
 
   // Filters
   const [filterArah,    setFilterArah]    = useState('');
-  const [filterTrigger, setFilterTrigger] = useState('');
   const [filterTicker,  setFilterTicker]  = useState('');
   // trade signals: default 30 hari (oracle jarang fire); lainnya: 7 hari
   const [filterDays,    setFilterDays]    = useState(() => activeTab === 'trade' ? '30' : '7');
@@ -104,11 +110,11 @@ export default function TriggersPanel({ activeTab }: Props) {
       if (filterArah)   params.set('arah', filterArah);
 
       if (activeTab === 'signals') {
-        if (filterTrigger) params.set('trigger', filterTrigger);
-        params.set('type', 'bandar_alerts');
+        params.set('type', 'bandar_flow');
+        params.set('limit', '200');
         const res  = await fetch(`/api/triggers?${params}`);
         const json = await res.json();
-        setAlerts(json.data || []);
+        setFlows(json.data || []);
       } else if (activeTab === 'trade') {
         params.set('type', 'trade_signals');
         const res  = await fetch(`/api/triggers?${params}`);
@@ -126,14 +132,14 @@ export default function TriggersPanel({ activeTab }: Props) {
       setLoading(false);
       setLastUpdated(new Date());
     }
-  }, [activeTab, filterTicker, filterArah, filterTrigger, filterDays]);
+  }, [activeTab, filterTicker, filterArah, filterDays]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Realtime subscription via Supabase postgres_changes (semua tab)
   useEffect(() => {
     const tableMap: Record<string, string> = {
-      signals: 'bandar_alerts',
+      signals: 'bandar_flow',
       trade:   'v4_trade_signals',
       algo:    'v4_algo_signals',
     };
@@ -175,33 +181,22 @@ export default function TriggersPanel({ activeTab }: Props) {
           style={inputStyle}
           maxLength={6}
         />
-        <select value={filterDays} onChange={e => setFilterDays(e.target.value)} style={inputStyle}>
-          <option value="1">1 hari</option>
-          <option value="3">3 hari</option>
-          <option value="7">7 hari</option>
-          <option value="14">14 hari</option>
-          <option value="30">30 hari</option>
-        </select>
+        {activeTab !== 'signals' && (
+          <select value={filterDays} onChange={e => setFilterDays(e.target.value)} style={inputStyle}>
+            <option value="1">1 hari</option>
+            <option value="3">3 hari</option>
+            <option value="7">7 hari</option>
+            <option value="14">14 hari</option>
+            <option value="30">30 hari</option>
+          </select>
+        )}
 
         {activeTab === 'signals' && (
-          <>
-            <select value={filterArah} onChange={e => setFilterArah(e.target.value)} style={inputStyle}>
-              <option value="">Semua Arah</option>
-              <option value="ACCUM">⬆ Akumulasi</option>
-              <option value="DISTRIB">⬇ Distribusi</option>
-            </select>
-            <select value={filterTrigger} onChange={e => setFilterTrigger(e.target.value)} style={inputStyle}>
-              <option value="">Semua Trigger</option>
-              <option value="SM">💵 Trigger SM</option>
-              <option value="BIG_SM">💰 Trigger Big SM</option>
-              <option value="MF_PLUS">📈 Live MF+</option>
-              <option value="BIG_MF_PLUS">🚀 Live Big MF+</option>
-              <option value="BAD_MONEY">💀 Trigger Bad Money</option>
-              <option value="MF_MINUS">📉 Live MF-</option>
-              <option value="BIG_MF_MINUS">⚠️ Live Big MF-</option>
-              <option value="ALGO">🤖 Algo</option>
-            </select>
-          </>
+          <select value={filterArah} onChange={e => setFilterArah(e.target.value)} style={inputStyle}>
+            <option value="">Semua Arah</option>
+            <option value="ACCUM">⬆ Akumulasi</option>
+            <option value="DISTRIB">⬇ Distribusi</option>
+          </select>
         )}
         {activeTab === 'algo' && (
           <select value={filterArah} onChange={e => setFilterArah(e.target.value)} style={inputStyle}>
@@ -226,7 +221,7 @@ export default function TriggersPanel({ activeTab }: Props) {
 
       {/* Signal Feed */}
       {activeTab === 'signals' && (
-        <AlertsTable alerts={alerts} />
+        <FlowTable flows={flows} />
       )}
 
       {/* Trade Signals */}
@@ -243,6 +238,65 @@ export default function TriggersPanel({ activeTab }: Props) {
 }
 
 // ── Sub-tables ────────────────────────────────────────────────────────────────
+
+function FlowTable({ flows }: { flows: BandarFlow[] }) {
+  if (flows.length === 0) return <EmptyState msg="Belum ada data bandar flow hari ini." />;
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <div style={{ marginBottom: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+        {flows.length} ticker diproses hari ini
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        {flows.map(f => {
+          const isAccum = f.arah === 'ACCUM';
+          const score = f.combined_score ?? 0;
+          const scoreColor = score >= 70 ? '#38ef7d' : score >= 50 ? '#fbbf24' : score <= -50 ? '#f5576c' : 'var(--text-secondary)';
+          const smNet = (f.intraday_sm_total ?? 0) + (f.intraday_bm_total ?? 0);
+          return (
+            <div key={f.ticker} style={{
+              display: 'grid',
+              gridTemplateColumns: '80px 55px 70px 80px 80px 80px 80px',
+              alignItems: 'center', gap: '0.5rem',
+              padding: '0.45rem 0.75rem',
+              background: 'var(--bg-card)',
+              border: `1px solid ${isAccum ? 'rgba(56,239,125,0.12)' : 'rgba(245,87,108,0.12)'}`,
+              borderRadius: '8px', fontSize: '0.78rem',
+            }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+                {f.ticker}
+                <span style={{ marginLeft: '4px', color: isAccum ? '#38ef7d' : '#f5576c' }}>
+                  {isAccum ? '⬆' : '⬇'}
+                </span>
+              </span>
+              <span style={{ fontWeight: 700, color: scoreColor }}>{score}</span>
+              <span style={{ fontSize: '0.7rem', color: isAccum ? '#38ef7d' : '#f5576c' }}>
+                {f.signal_strength || '-'}
+              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                SM: <b style={{ color: smNet > 0 ? '#38ef7d' : smNet < 0 ? '#f5576c' : 'var(--text-secondary)' }}>
+                  {lots(smNet)}
+                </b>
+              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                MF: <b style={{ color: (f.intraday_mf_net ?? 0) > 0 ? '#38ef7d' : '#f5576c' }}>
+                  {lots(f.intraday_mf_net ?? 0)}
+                </b>
+              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
+                10d: <b style={{ color: (f.net_lots_10d ?? 0) > 0 ? '#38ef7d' : '#f5576c' }}>
+                  {lots(f.net_lots_10d ?? 0)}
+                </b>
+              </span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
+                {timeAgo(f.updated_at)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function AlertsTable({ alerts }: { alerts: BandarAlert[] }) {
   if (alerts.length === 0) return <EmptyState msg="Belum ada signal. Bot berjalan sejak 2 Apr 2026." />;
