@@ -162,6 +162,7 @@ const Navbar = () => {
                   <Link href="/triggers/smkalkulator" className="nav-dropdown-item" onClick={closeAllDropdowns}>💰 SM Kalkulator</Link>
                   <Link href="/triggers/mfkalkulator" className="nav-dropdown-item" onClick={closeAllDropdowns}>📊 MF Kalkulator</Link>
                   <Link href="/triggers/algo" className="nav-dropdown-item" onClick={closeAllDropdowns}>🤖 Algo Signals</Link>
+                  <Link href="/triggers/smrolling" className="nav-dropdown-item" onClick={closeAllDropdowns}>📊 SM Rolling</Link>
                 </div>
               )}
             </div>
