@@ -84,15 +84,13 @@ export default function TriggersPanel({ activeTab }: Props) {
   const [filterTicker,  setFilterTicker]  = useState('');
   const [filterDays,    setFilterDays]    = useState('7');
 
-  const fromISO = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - parseInt(filterDays || '7'));
-    return d.toISOString();
-  })();
-
   const fetchData = useCallback(async () => {
     setLoading(true); setError('');
     try {
+      const d = new Date();
+      d.setDate(d.getDate() - parseInt(filterDays || '7'));
+      const fromISO = d.toISOString();
+
       const params = new URLSearchParams({ limit: '100', from: fromISO });
       if (filterTicker) params.set('ticker', filterTicker.toUpperCase());
       if (filterArah)   params.set('arah', filterArah);
@@ -120,7 +118,7 @@ export default function TriggersPanel({ activeTab }: Props) {
       setLoading(false);
       setLastUpdated(new Date());
     }
-  }, [activeTab, filterTicker, filterArah, filterTrigger, filterDays, fromISO]);
+  }, [activeTab, filterTicker, filterArah, filterTrigger, filterDays]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
