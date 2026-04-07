@@ -124,19 +124,24 @@ export default function TriggersPanel({ activeTab }: Props) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Realtime untuk bandar_alerts
+  // Realtime subscription via Supabase postgres_changes (semua tab)
   useEffect(() => {
-    if (activeTab !== 'signals') return;
+    const tableMap: Record<string, string> = {
+      signals: 'bandar_alerts',
+      trade:   'v4_trade_signals',
+      algo:    'v4_algo_signals',
+    };
+    const table = tableMap[activeTab];
+    if (!table) return;
     const ch = supabase
-      .channel('triggers-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bandar_alerts' }, () => fetchData())
+      .channel(`triggers-realtime-${activeTab}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [activeTab, fetchData]);
 
-  // Auto-refresh 30 detik untuk trade & algo
+  // Auto-refresh 30 detik untuk SEMUA tab (fallback jika realtime blocked by RLS)
   useEffect(() => {
-    if (activeTab === 'signals') return;
     setCountdown(30);
     const interval = setInterval(() => { fetchData(); setCountdown(30); }, 30000);
     countdownRef.current = setInterval(() => {
@@ -201,15 +206,10 @@ export default function TriggersPanel({ activeTab }: Props) {
         )}
         <button onClick={fetchData} style={btnStyle}>↻ Refresh</button>
         {loading && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Loading...</span>}
-        {!loading && activeTab !== 'signals' && (
+        {!loading && lastUpdated && (
           <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
-            🔄 auto {countdown}s
-            {lastUpdated && ` · ${lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
-          </span>
-        )}
-        {!loading && activeTab === 'signals' && lastUpdated && (
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginLeft: '0.25rem' }}>
-            ⚡ realtime · {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            ⚡ realtime · 🔄 {countdown}s
+            {` · ${lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
           </span>
         )}
       </div>
