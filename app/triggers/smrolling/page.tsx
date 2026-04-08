@@ -59,35 +59,40 @@ export default function SmRollingPage() {
   const [lastUpdated,  setLastUpdated]  = useState<Date | null>(null);
   const [countdown,    setCountdown]    = useState(30);
   const [dataDate,     setDataDate]     = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>('');  // '' = hari ini (auto-fallback)
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
+  const isToday = !selectedDate || selectedDate === today;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const fromDate = selectedDate || today;
       const params = new URLSearchParams({
-        type: 'sm_rolling', limit: '200', from: today,
+        type: 'sm_rolling', limit: '200', from: fromDate,
       });
       if (filterTicker) params.set('ticker', filterTicker.toUpperCase());
+      // Untuk tanggal historis: filter exact date saja (bukan gte)
+      if (selectedDate && selectedDate !== today) params.set('exact_date', 'true');
       const res  = await fetch(`/api/triggers?${params}`);
       const json = await res.json();
       setData(json.data || []);
       setLastUpdated(new Date());
-      // Tampilkan tanggal data yang sebenarnya (fallback ke kemarin jika hari ini kosong)
       if (json.latest_date) setDataDate(json.latest_date);
       else if (json.data?.[0]?.trade_date) setDataDate(json.data[0].trade_date);
     } finally { setLoading(false); }
-  }, [filterTicker, today]);
+  }, [filterTicker, today, selectedDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Auto-refresh 30s
+  // Auto-refresh 30s — hanya aktif jika lihat data hari ini
   useEffect(() => {
+    if (!isToday) return;
     setCountdown(30);
     const iv1 = setInterval(() => { fetchData(); setCountdown(30); }, 30000);
     const iv2 = setInterval(() => setCountdown(p => p <= 1 ? 30 : p - 1), 1000);
     return () => { clearInterval(iv1); clearInterval(iv2); };
-  }, [fetchData]);
+  }, [fetchData, isToday]);
 
   // Supabase Realtime — update saat backfill/EOD sync
   useEffect(() => {
@@ -133,11 +138,16 @@ export default function SmRollingPage() {
         {dataDate && (
           <p style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
             <span style={{
-              background: dataDate === today ? 'rgba(56,239,125,0.15)' : 'rgba(251,191,36,0.15)',
-              color: dataDate === today ? '#38ef7d' : '#fbbf24',
+              background: isToday && dataDate === today ? 'rgba(56,239,125,0.15)' : 'rgba(251,191,36,0.15)',
+              color: isToday && dataDate === today ? '#38ef7d' : '#fbbf24',
               padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem',
             }}>
-              {dataDate === today ? `Data hari ini (${dataDate})` : `Data terakhir: ${dataDate} — hari ini belum ada (EOD belum jalan)`}
+              {isToday
+                ? dataDate === today
+                  ? `Data hari ini (${dataDate})`
+                  : `Data terakhir: ${dataDate} — hari ini belum ada (EOD belum jalan)`
+                : `Menampilkan data historis: ${dataDate}`
+              }
             </span>
           </p>
         )}
@@ -164,6 +174,25 @@ export default function SmRollingPage() {
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+        {/* Date picker */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <input
+            type="date"
+            value={selectedDate || today}
+            max={today}
+            onChange={e => setSelectedDate(e.target.value === today ? '' : e.target.value)}
+            style={{ ...inp, colorScheme: 'dark' }}
+          />
+          {!isToday && (
+            <button
+              onClick={() => setSelectedDate('')}
+              title="Kembali ke hari ini"
+              style={{ ...btn, padding: '0.35rem 0.55rem', color: '#38ef7d', borderColor: 'rgba(56,239,125,0.3)' }}
+            >
+              ⟳ Hari ini
+            </button>
+          )}
+        </div>
         <input
           placeholder="Ticker..."
           value={filterTicker}
@@ -187,7 +216,8 @@ export default function SmRollingPage() {
         {loading && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Loading...</span>}
         {!loading && lastUpdated && (
           <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-            ⚡ realtime · 🔄 {countdown}s · {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {isToday ? `⚡ realtime · 🔄 ${countdown}s · ` : '📅 historis · '}
+            {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </span>
         )}
       </div>

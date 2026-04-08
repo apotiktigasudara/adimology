@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
   const trigger = searchParams.get('trigger');        // SM | BIG_SM | MF_PLUS | BIG_MF_PLUS | BAD_MONEY | MF_MINUS | BIG_MF_MINUS | ALGO
   const from    = searchParams.get('from');           // ISO date
   const dedup   = searchParams.get('dedup') === 'true'; // dedup by ticker (show highest score only)
-  const limit   = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
+  const limit      = Math.min(parseInt(searchParams.get('limit') || '50'), 200);
+  const exact_date = searchParams.get('exact_date') === 'true';
 
   try {
     if (type === 'bandar_alerts') {
@@ -86,8 +87,23 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'sm_rolling') {
-      // Cari tanggal terbaru yang ada data (fallback otomatis jika hari ini kosong)
       let targetDate = from;
+
+      if (exact_date && targetDate) {
+        // Mode historis: query exact date, tidak perlu fallback
+        let q = supabase
+          .from('v4_sm_rolling')
+          .select('*')
+          .eq('trade_date', targetDate)
+          .order('sm_3d', { ascending: false })
+          .limit(limit);
+        if (ticker) q = q.eq('ticker', ticker);
+        const { data, error } = await q;
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: data || [], latest_date: targetDate });
+      }
+
+      // Mode hari ini: fallback otomatis ke tanggal terbaru yang ada data
       if (targetDate && !ticker) {
         const { data: checkToday } = await supabase
           .from('v4_sm_rolling')
