@@ -18,14 +18,23 @@ const PUBLIC_PATHS = [
   '/api/alert-center',
   '/api/backtest',
   '/api/analyze-story-background',
+  // Chrome extension token sync — no session cookie, must be public
+  '/api/update-token',
 ];
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Max-Age':       '86400',
+};
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow CORS preflight (OPTIONS) for all routes — handled by route handlers
+  // Allow CORS preflight — return headers directly so Vercel edge doesn't strip them
   if (request.method === 'OPTIONS') {
-    return NextResponse.next();
+    return new NextResponse(null, { status: 200, headers: CORS_HEADERS });
   }
 
   // 1. Allow background jobs/cron via secret token
