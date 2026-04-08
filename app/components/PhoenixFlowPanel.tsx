@@ -19,30 +19,34 @@ import { supabase } from '@/lib/supabase';
 type ArahFilter = 'ALL' | 'ACCUM' | 'DISTRIB';
 
 interface PhoenixFlowPanelProps {
-  /** Jika diisi, tombol "Analisa →" di tiap card akan memanggil callback ini */
   onAnalyze?: (ticker: string) => void;
 }
 
 const TABS: { label: string; value: ArahFilter }[] = [
-  { label: 'Semua',      value: 'ALL'     },
-  { label: '⬆ Akumulasi', value: 'ACCUM'  },
+  { label: 'Semua',        value: 'ALL'     },
+  { label: '⬆ Akumulasi',  value: 'ACCUM'   },
   { label: '⬇ Distribusi', value: 'DISTRIB' },
 ];
 
 const MIN_SCORE_OPTIONS = [0, 40, 60, 80];
 
-function today(): string {
-  return new Date().toISOString().split('T')[0];
+function todayWIB(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 }
 
 export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = {}) {
-  const [data,        setData]        = useState<BandarFlow[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState<string | null>(null);
-  const [arahTab,     setArahTab]     = useState<ArahFilter>('ALL');
-  const [minScore,    setMinScore]    = useState(40);
-  const [lastFetch,   setLastFetch]   = useState<Date | null>(null);
-  const [chartTicker, setChartTicker] = useState<string | null>(null);
+  const [data,         setData]         = useState<BandarFlow[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
+  const [arahTab,      setArahTab]      = useState<ArahFilter>('ALL');
+  const [minScore,     setMinScore]     = useState(40);
+  const [lastFetch,    setLastFetch]    = useState<Date | null>(null);
+  const [chartTicker,  setChartTicker]  = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>('');   // '' = hari ini
+  const [dataDate,     setDataDate]     = useState<string>('');   // tanggal actual yang dikembalikan API
+
+  const today   = todayWIB();
+  const isToday = !selectedDate || selectedDate === today;
 
   // Ref untuk dedupe realtime updates
   const dataRef = useRef<BandarFlow[]>([]);
@@ -56,37 +60,38 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
 
     try {
       const url = new URL('/api/bandar-flow', window.location.origin);
-      url.searchParams.set('date', today());
+      url.searchParams.set('date', selectedDate || today);
       url.searchParams.set('min_score', String(minScore));
-      url.searchParams.set('limit', '50');
+      url.searchParams.set('limit', '100');
 
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const json = await res.json();
       setData((json.data ?? []) as BandarFlow[]);
+      setDataDate(json.date || '');
       setLastFetch(new Date());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Gagal mengambil data');
     } finally {
       setLoading(false);
     }
-  }, [minScore]);
+  }, [minScore, selectedDate, today]);
 
-  // Initial load + refetch when minScore changes
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // Initial load + refetch when deps change
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // auto-refresh every 60 seconds (silent — no loading spinner)
+  // Auto-refresh 60s — hanya aktif saat lihat data hari ini
   useEffect(() => {
+    if (!isToday) return;
     const interval = setInterval(() => fetchData(true), 60_000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, isToday]);
 
-  // ── Supabase Realtime — UPDATE events ──────────────────────────────────── //
+  // ── Supabase Realtime — hanya aktif saat hari ini ──────────────────────── //
 
   useEffect(() => {
+    if (!isToday) return;
     const channel = supabase
       .channel('phoenix-bandar-flow')
       .on(
@@ -95,21 +100,17 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
         (payload) => {
           const updated = payload.new as BandarFlow;
           if (!updated?.ticker) return;
-
-          // Jika bukan hari ini, abaikan
-          if (updated.trade_date !== today()) return;
+          if (updated.trade_date !== today) return;
 
           setData((prev) => {
             const idx = prev.findIndex(
               (r) => r.ticker === updated.ticker && r.trade_date === updated.trade_date,
             );
             if (idx >= 0) {
-              // Update existing row
               const next = [...prev];
               next[idx] = updated;
               return next.sort((a, b) => b.combined_score - a.combined_score);
             }
-            // New ticker — add to top if meets min_score
             if (updated.combined_score >= minScore) {
               return [updated, ...prev].sort((a, b) => b.combined_score - a.combined_score);
             }
@@ -120,10 +121,8 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [minScore]);
+    return () => { supabase.removeChannel(channel); };
+  }, [minScore, isToday, today]);
 
   // ── Client-side filtering ───────────────────────────────────────────────── //
 
@@ -150,6 +149,32 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
         </div>
 
         <div className="pf-controls">
+          {/* Date picker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <input
+              type="date"
+              value={selectedDate || today}
+              max={today}
+              onChange={e => setSelectedDate(e.target.value === today ? '' : e.target.value)}
+              style={{
+                padding: '0.25rem 0.5rem', background: 'var(--bg-card)',
+                border: '1px solid var(--border-color)', borderRadius: '8px',
+                color: 'var(--text-primary)', fontSize: '0.78rem',
+                colorScheme: 'dark', outline: 'none',
+              }}
+            />
+            {!isToday && (
+              <button
+                className="pf-refresh-btn"
+                onClick={() => setSelectedDate('')}
+                title="Kembali ke hari ini"
+                style={{ color: '#38ef7d', borderColor: 'rgba(56,239,125,0.3)' }}
+              >
+                ⟳ Hari ini
+              </button>
+            )}
+          </div>
+
           {/* Arah tabs */}
           <div className="pf-tabs">
             {TABS.map((tab) => (
@@ -179,37 +204,48 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
           </div>
 
           {/* Refresh */}
-          <button
-            className="pf-refresh-btn"
-            onClick={() => fetchData()}
-            title="Refresh data"
-          >
+          <button className="pf-refresh-btn" onClick={() => fetchData()} title="Refresh data">
             ↺ Refresh
           </button>
         </div>
       </div>
 
       {/* Stats bar */}
-      {!loading && data.length > 0 && (
+      {!loading && (
         <div className="pf-stats">
-          <span className="pf-stat-item">
-            Total: <strong>{data.length}</strong>
-          </span>
-          <span className="pf-stat-item pf-stat-accum">
-            ⬆ Akumulasi: <strong>{accumCount}</strong>
-          </span>
-          <span className="pf-stat-item pf-stat-distrib">
-            ⬇ Distribusi: <strong>{distribCount}</strong>
-          </span>
+          {/* Date badge */}
+          {dataDate && (
+            <span className="pf-stat-item" style={{
+              background: isToday && dataDate === today
+                ? 'rgba(56,239,125,0.12)' : 'rgba(251,191,36,0.12)',
+              color: isToday && dataDate === today ? '#38ef7d' : '#fbbf24',
+              padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem',
+            }}>
+              {isToday
+                ? dataDate === today
+                  ? `📅 ${dataDate}`
+                  : `📅 ${dataDate} — hari ini belum ada data`
+                : `📅 Historis: ${dataDate}`}
+            </span>
+          )}
+          {data.length > 0 && (<>
+            <span className="pf-stat-item">
+              Total: <strong>{data.length}</strong>
+            </span>
+            <span className="pf-stat-item pf-stat-accum">
+              ⬆ Akumulasi: <strong>{accumCount}</strong>
+            </span>
+            <span className="pf-stat-item pf-stat-distrib">
+              ⬇ Distribusi: <strong>{distribCount}</strong>
+            </span>
+          </>)}
           {lastFetch && (
-            <span className="pf-stat-item" style={{ marginLeft: 'auto' }}>
-              Update:{' '}
-              <strong>
-                {lastFetch.toLocaleTimeString('id-ID', {
-                  hour: '2-digit', minute: '2-digit', second: '2-digit',
-                  timeZone: 'Asia/Jakarta',
-                })}
-              </strong>
+            <span className="pf-stat-item" style={{ marginLeft: 'auto', fontSize: '0.72rem', opacity: 0.7 }}>
+              {isToday ? '⚡ realtime · ' : '📂 historis · '}
+              {lastFetch.toLocaleTimeString('id-ID', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZone: 'Asia/Jakarta',
+              })}
             </span>
           )}
         </div>
@@ -230,9 +266,11 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
         </div>
       ) : filtered.length === 0 ? (
         <div className="pf-empty">
-          <span>📊 Belum ada data bandar flow hari ini</span>
+          <span>📊 {isToday ? 'Belum ada data bandar flow hari ini' : `Tidak ada data untuk ${dataDate || selectedDate}`}</span>
           <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-            Phoenix Bot akan mengisi data saat signal masuk dari Telegram
+            {isToday
+              ? 'Phoenix Bot akan mengisi data saat signal masuk dari Telegram'
+              : 'Coba pilih tanggal lain atau kembali ke hari ini'}
           </span>
         </div>
       ) : (
