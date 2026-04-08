@@ -84,8 +84,8 @@ export default function PasswordGate({ children }: PasswordGateProps) {
   return (
     <div className="password-gate">
       <div className="password-gate-card">
-        <div className="password-gate-icon">
-          <img src="/phoenix-logo.png" alt="PheonixOfIDX" width={80} height={80} style={{ objectFit: 'contain', borderRadius: '12px', marginBottom: '0.5rem' }} />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+          <img src="/phoenix-logo.png" alt="PheonixOfIDX" width={110} height={110} style={{ objectFit: 'contain', borderRadius: '16px' }} />
         </div>
         <h2 className="password-gate-title">PheonixOfIDX</h2>
         <p className="password-gate-subtitle">Masukkan password untuk mengakses aplikasi</p>
