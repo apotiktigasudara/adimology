@@ -58,6 +58,7 @@ export default function SmRollingPage() {
   const [sortBy,       setSortBy]       = useState<'sm_3d' | 'sm_10d' | 'sm_30d' | 'nbsa_daily'>('sm_3d');
   const [lastUpdated,  setLastUpdated]  = useState<Date | null>(null);
   const [countdown,    setCountdown]    = useState(30);
+  const [dataDate,     setDataDate]     = useState<string>('');
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 
@@ -72,6 +73,9 @@ export default function SmRollingPage() {
       const json = await res.json();
       setData(json.data || []);
       setLastUpdated(new Date());
+      // Tampilkan tanggal data yang sebenarnya (fallback ke kemarin jika hari ini kosong)
+      if (json.latest_date) setDataDate(json.latest_date);
+      else if (json.data?.[0]?.trade_date) setDataDate(json.data[0].trade_date);
     } finally { setLoading(false); }
   }, [filterTicker, today]);
 
@@ -124,8 +128,19 @@ export default function SmRollingPage() {
         </h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
           Akumulasi Smart Money multi-hari · CLIMAX / BUILDING / DISTRIBUTION
-          {' '}· Update saat /backfill atau EOD sync
+          {' '}· Update saat /backfill atau EOD sync (16:30 WIB)
         </p>
+        {dataDate && (
+          <p style={{ fontSize: '0.75rem', marginTop: '0.2rem' }}>
+            <span style={{
+              background: dataDate === today ? 'rgba(56,239,125,0.15)' : 'rgba(251,191,36,0.15)',
+              color: dataDate === today ? '#38ef7d' : '#fbbf24',
+              padding: '0.1rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem',
+            }}>
+              {dataDate === today ? `Data hari ini (${dataDate})` : `Data terakhir: ${dataDate} — hari ini belum ada (EOD belum jalan)`}
+            </span>
+          </p>
+        )}
       </div>
 
       {/* Summary cards */}

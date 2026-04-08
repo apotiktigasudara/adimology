@@ -86,16 +86,34 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'sm_rolling') {
+      // Cari tanggal terbaru yang ada data (fallback otomatis jika hari ini kosong)
+      let targetDate = from;
+      if (targetDate && !ticker) {
+        const { data: checkToday } = await supabase
+          .from('v4_sm_rolling')
+          .select('trade_date')
+          .eq('trade_date', targetDate)
+          .limit(1);
+        if (!checkToday || checkToday.length === 0) {
+          // Hari ini kosong — cari tanggal terbaru yang ada data
+          const { data: latestRow } = await supabase
+            .from('v4_sm_rolling')
+            .select('trade_date')
+            .order('trade_date', { ascending: false })
+            .limit(1);
+          targetDate = latestRow?.[0]?.trade_date ?? targetDate;
+        }
+      }
       let q = supabase
         .from('v4_sm_rolling')
         .select('*')
         .order('trade_date', { ascending: false })
         .limit(limit);
-      if (ticker) q = q.eq('ticker', ticker);
-      if (from)   q = q.gte('trade_date', from);
+      if (ticker)     q = q.eq('ticker', ticker);
+      if (targetDate) q = q.gte('trade_date', targetDate);
       const { data, error } = await q;
       if (error) throw error;
-      return NextResponse.json({ success: true, data });
+      return NextResponse.json({ success: true, data, latest_date: targetDate });
     }
 
     if (type === 'oracle') {
