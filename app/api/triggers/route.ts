@@ -120,13 +120,27 @@ export async function GET(request: NextRequest) {
           targetDate = latestRow?.[0]?.trade_date ?? targetDate;
         }
       }
+
+      if (ticker) {
+        // Pencarian per ticker: ambil semua data ticker tsb, tanpa limit ketat
+        let q = supabase
+          .from('v4_sm_rolling')
+          .select('*')
+          .eq('ticker', ticker)
+          .order('trade_date', { ascending: false })
+          .limit(90);
+        const { data, error } = await q;
+        if (error) throw error;
+        return NextResponse.json({ success: true, data, latest_date: targetDate });
+      }
+
+      // Mode normal: ambil semua ticker untuk exact date, order by sm_3d
       let q = supabase
         .from('v4_sm_rolling')
         .select('*')
-        .order('trade_date', { ascending: false })
-        .limit(limit);
-      if (ticker)     q = q.eq('ticker', ticker);
-      if (targetDate) q = q.gte('trade_date', targetDate);
+        .order('sm_3d', { ascending: false })
+        .limit(500);
+      if (targetDate) q = q.eq('trade_date', targetDate);
       const { data, error } = await q;
       if (error) throw error;
       return NextResponse.json({ success: true, data, latest_date: targetDate });

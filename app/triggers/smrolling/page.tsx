@@ -69,7 +69,7 @@ export default function SmRollingPage() {
     try {
       const fromDate = selectedDate || today;
       const params = new URLSearchParams({
-        type: 'sm_rolling', limit: '200', from: fromDate,
+        type: 'sm_rolling', limit: '500', from: fromDate,
       });
       if (filterTicker) params.set('ticker', filterTicker.toUpperCase());
       // Untuk tanggal historis: filter exact date saja (bukan gte)
