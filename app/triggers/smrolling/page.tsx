@@ -55,7 +55,8 @@ export default function SmRollingPage() {
   const [loading,      setLoading]      = useState(false);
   const [filterTicker, setFilterTicker] = useState('');
   const [filterPhase,  setFilterPhase]  = useState('');
-  const [sortBy,       setSortBy]       = useState<'sm_3d' | 'sm_10d' | 'sm_30d' | 'nbsa_daily'>('sm_3d');
+  const [sortBy,       setSortBy]       = useState<string>('sm_3d');
+  const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('desc');
   const [lastUpdated,  setLastUpdated]  = useState<Date | null>(null);
   const [countdown,    setCountdown]    = useState(30);
   const [dataDate,     setDataDate]     = useState<string>('');
@@ -105,6 +106,11 @@ export default function SmRollingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchData]);
 
+  const handleSort = (col: string) => {
+    if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
+    else { setSortBy(col); setSortDir('desc'); }
+  };
+
   // Sort + filter client-side
   const enriched = data.map(r => ({
     ...r,
@@ -115,7 +121,16 @@ export default function SmRollingPage() {
 
   const filtered = enriched
     .filter(r => !filterPhase || r.phase === filterPhase)
-    .sort((a, b) => (b[sortBy] ?? 0) - (a[sortBy] ?? 0));
+    .sort((a, b) => {
+      const av = (a as Record<string, unknown>)[sortBy];
+      const bv = (b as Record<string, unknown>)[sortBy];
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return sortDir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv);
+      }
+      const an = (av as number) ?? 0;
+      const bn = (bv as number) ?? 0;
+      return sortDir === 'desc' ? bn - an : an - bn;
+    });
 
   const stats = {
     climax:  enriched.filter(r => r.phase === 'CLIMAX').length,
@@ -206,11 +221,16 @@ export default function SmRollingPage() {
           <option value="INITIAL">🔵 INITIAL</option>
           <option value="DISTRIBUTION">🔴 DISTRIBUTION</option>
         </select>
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} style={inp}>
+        <select value={sortBy} onChange={e => { setSortBy(e.target.value); setSortDir('desc'); }} style={inp}>
           <option value="sm_3d">Sort: SM 3D</option>
           <option value="sm_10d">Sort: SM 10D</option>
           <option value="sm_30d">Sort: SM 30D</option>
+          <option value="sm_daily">Sort: SM Today</option>
+          <option value="bm_daily">Sort: BM Today</option>
+          <option value="sm_net">Sort: Net</option>
+          <option value="accel">Sort: Accel</option>
           <option value="nbsa_daily">Sort: NBSA</option>
+          <option value="ticker">Sort: Ticker</option>
         </select>
         <button onClick={fetchData} style={btn}>↻ Refresh</button>
         {loading && <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Loading...</span>}
@@ -233,8 +253,35 @@ export default function SmRollingPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.79rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.71rem' }}>
-                {['Ticker','Phase','SM Today','BM Today','Net','Accel','SM 3D','SM 10D','SM 30D','NBSA','Tanggal'].map(h => (
-                  <th key={h} style={{ padding: '0.5rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
+                {([
+                  ['Ticker',   'ticker'],
+                  ['Phase',    'phase'],
+                  ['SM Today', 'sm_daily'],
+                  ['BM Today', 'bm_daily'],
+                  ['Net',      'sm_net'],
+                  ['Accel',    'accel'],
+                  ['SM 3D',    'sm_3d'],
+                  ['SM 10D',   'sm_10d'],
+                  ['SM 30D',   'sm_30d'],
+                  ['NBSA',     'nbsa_daily'],
+                  ['Tanggal',  'trade_date'],
+                ] as [string, string][]).map(([label, col]) => (
+                  <th
+                    key={col}
+                    onClick={() => handleSort(col)}
+                    style={{
+                      padding: '0.5rem 0.6rem', textAlign: 'left', fontWeight: 600,
+                      whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
+                      color: sortBy === col ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {label}
+                    {sortBy === col && (
+                      <span style={{ marginLeft: '0.3rem', fontSize: '0.65rem' }}>
+                        {sortDir === 'desc' ? '▼' : '▲'}
+                      </span>
+                    )}
+                  </th>
                 ))}
               </tr>
             </thead>
