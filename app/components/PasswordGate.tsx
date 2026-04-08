@@ -85,9 +85,9 @@ export default function PasswordGate({ children }: PasswordGateProps) {
     <div className="password-gate">
       <div className="password-gate-card">
         <div className="password-gate-icon">
-          <Lock size={40} />
+          <img src="/phoenix-logo.png" alt="PheonixOfIDX" width={80} height={80} style={{ objectFit: 'contain', borderRadius: '12px', marginBottom: '0.5rem' }} />
         </div>
-        <h2 className="password-gate-title">Adimology</h2>
+        <h2 className="password-gate-title">PheonixOfIDX</h2>
         <p className="password-gate-subtitle">Masukkan password untuk mengakses aplikasi</p>
 
         <form onSubmit={handleUnlock} className="password-gate-form">
@@ -152,7 +152,7 @@ export default function PasswordGate({ children }: PasswordGateProps) {
         <p className="password-gate-hint">
           Lupa password? Reset melalui Supabase.{' '}
           <a
-            href="https://github.com/bhaktiutama/adimology/wiki/Reset-Password"
+            href="https://github.com/apotiktigasudara/Pheonix"
             target="_blank"
             rel="noopener noreferrer"
           >

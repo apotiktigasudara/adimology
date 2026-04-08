@@ -242,7 +242,7 @@ export default function PasswordSettingModal({ isOpen, onClose }: PasswordSettin
               <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.75rem', textAlign: 'center' }}>
                 Jika lupa password, reset melalui Supabase.{' '} 
                 <a
-                  href="https://github.com/bhaktiutama/adimology/wiki/Reset-Password"
+                  href="https://github.com/apotiktigasudara/Pheonix"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--accent-primary)' }}

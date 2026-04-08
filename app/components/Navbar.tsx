@@ -37,17 +37,10 @@ const Navbar = () => {
       <div className="navbar-container">
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div className="navbar-logo-icon" style={{ background: 'transparent', display: 'flex', alignItems: 'center' }}>
-            <svg width="42" height="42" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="49" y="10" width="2" height="80" fill="currentColor" />
-              <rect x="44" y="32" width="12" height="38" fill="currentColor" />
-              <path d="M22 30C40 18 60 22 80 32" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-              <path d="M22 30C18 30 16 38 22 42C24 44 28 42 28 38" stroke="currentColor" strokeLinecap="round" strokeWidth="2.5" />
-              <line stroke="currentColor" strokeWidth="1.5" x1="22" x2="44" y1="30" y2="70" />
-              <line stroke="currentColor" strokeWidth="1.5" x1="80" x2="56" y1="32" y2="70" />
-            </svg>
+            <img src="/phoenix-logo.png" alt="PheonixOfIDX" width={42} height={42} style={{ objectFit: 'contain', borderRadius: '6px' }} />
           </div>
           <div className="navbar-content">
-            <h1 className="navbar-title">Adimology Calculator</h1>
+            <h1 className="navbar-title">PheonixOfIDX</h1>
             <p className="navbar-subtitle">Analyze stock targets based on broker summary</p>
           </div>
         </div>
@@ -167,7 +160,7 @@ const Navbar = () => {
               )}
             </div>
             <a
-              href="https://github.com/bhaktiutama/adimology" 
+              href="https://github.com/apotiktigasudara/Pheonix" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{
@@ -347,7 +340,7 @@ const Navbar = () => {
               📈 Backtest
             </Link>
             <a
-              href="https://github.com/bhaktiutama/adimology"
+              href="https://github.com/apotiktigasudara/Pheonix"
               target="_blank"
               rel="noopener noreferrer"
               style={{

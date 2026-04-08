@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Adimology",
-  description: "Stock Analysis Dashboard",
+  title: "PheonixOfIDX",
+  description: "Stock Analysis Dashboard — Phoenix Bot IDX",
 };
 
 import Navbar from "./components/Navbar";
