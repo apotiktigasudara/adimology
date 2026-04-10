@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     // ── Mode ranking: semua ticker ──────────────────────────────────────────
     const { data: smAll, error } = await supabase
       .from('v4_sm_rolling')
-      .select('ticker, sm_daily, bm_daily, mfp_daily, mfn_daily, sm_10d, sm_30d, trade_date')
+      .select('ticker, sm_daily, bm_daily, mfp_daily, mfn_daily, sm_10d, sm_30d, nbsa_daily, trade_date')
       .gte('trade_date', fromDate.toISOString().split('T')[0])
       .order('trade_date', { ascending: false });
 
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     const tickerMap: Record<string, {
       ticker: string; net_sm: number; net_mf: number;
       sm_total: number; bm_total: number; mfp_total: number; mfn_total: number;
-      sm_10d: number | null; sm_30d: number | null; days_count: number;
+      sm_10d: number | null; sm_30d: number | null; nbsa_daily: number | null; days_count: number;
     }> = {};
 
     for (const r of smAll || []) {
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         tickerMap[r.ticker] = {
           ticker: r.ticker, net_sm: 0, net_mf: 0,
           sm_total: 0, bm_total: 0, mfp_total: 0, mfn_total: 0,
-          sm_10d: null, sm_30d: null, days_count: 0
+          sm_10d: null, sm_30d: null, nbsa_daily: null, days_count: 0
         };
       }
       const t = tickerMap[r.ticker];
@@ -149,8 +149,8 @@ export async function GET(request: NextRequest) {
       t.mfp_total += r.mfp_daily || 0;
       t.mfn_total += r.mfn_daily || 0;
       t.days_count++;
-      // latest sm_10d/sm_30d (already ordered desc, so first hit = latest)
-      if (t.sm_10d === null) { t.sm_10d = r.sm_10d; t.sm_30d = r.sm_30d; }
+      // latest values (already ordered desc, so first hit = latest)
+      if (t.sm_10d === null) { t.sm_10d = r.sm_10d; t.sm_30d = r.sm_30d; t.nbsa_daily = r.nbsa_daily; }
     }
 
     const ranking = Object.values(tickerMap).map(t => {

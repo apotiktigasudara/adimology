@@ -32,7 +32,8 @@ interface DetailResult {
 interface RankingRow {
   ticker: string; score: number; verdict: string;
   net_sm: number; net_mf: number; sm_total: number; bm_total: number;
-  mfp_total: number; mfn_total: number; sm_10d: number | null; days_count: number;
+  mfp_total: number; mfn_total: number; sm_10d: number | null;
+  nbsa_daily: number | null; days_count: number;
 }
 interface RankingResult { days: number; source: string; ranking: RankingRow[] }
 
@@ -131,7 +132,7 @@ export default function SmMfKalkulator({ source }: Props) {
           border: '1px solid var(--border-color)', borderRadius: '8px',
           color: 'var(--text-primary)', fontSize: '0.8rem',
         }}>
-          {['7','14','30','60'].map(d => <option key={d} value={d}>{d} hari</option>)}
+          {['3','7','14','30','60'].map(d => <option key={d} value={d}>{d} hari</option>)}
         </select>
 
         <button onClick={analyze} disabled={loading} style={{
@@ -156,7 +157,7 @@ export default function SmMfKalkulator({ source }: Props) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
-                  {['#','Ticker','Verdict', netLabel, colA, colB, rollLabel, 'Hari'].map(h => (
+                  {['#','Ticker','Verdict', netLabel, colA, colB, rollLabel, 'NBSA', 'Hari'].map(h => (
                     <th key={h} style={{ padding: '0.5rem 0.6rem', textAlign: 'left', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -182,6 +183,9 @@ export default function SmMfKalkulator({ source }: Props) {
                       <td style={{ ...td, color: '#38ef7d' }}>{n(mainA)}</td>
                       <td style={{ ...td, color: '#f5576c' }}>{n(mainB)}</td>
                       <td style={{ ...td, color: 'var(--accent-primary)' }}>{n(r.sm_10d)}</td>
+                      <td style={{ ...td, color: r.nbsa_daily == null ? 'var(--text-secondary)' : r.nbsa_daily > 0 ? '#38ef7d' : '#f5576c', fontWeight: r.nbsa_daily != null ? 600 : 400 }}>
+                        {r.nbsa_daily != null ? n(r.nbsa_daily, true, 1) : '-'}
+                      </td>
                       <td style={{ ...td, color: 'var(--text-secondary)' }}>{r.days_count}</td>
                     </tr>
                   );
