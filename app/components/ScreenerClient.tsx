@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 
 interface PickRow {
   ticker:         string;
-  oracle_score:   number;
+  sm_score:       number;   // oracle_score jika ada, else sm_10d
   sm_10d:         number;
   bandar_net_10d: number;
   combined_score: number;
@@ -23,13 +23,14 @@ interface PickRow {
 }
 
 interface TidurRow {
-  ticker:       string;
-  markup_phase: string;
-  oracle_score: number;
-  sm_10d:       number;
-  streak:       number;
-  trade_date:   string;
-  rank_score:   number;
+  ticker:          string;
+  signal_strength: string;
+  net_value_10d:   number;
+  combined_score:  number;
+  markup_phase:    string | null;
+  streak:          number;
+  trade_date:      string;
+  rank_score:      number;
 }
 
 interface ScreenerData {
@@ -219,8 +220,8 @@ export default function ScreenerClient() {
                     <div style={{ fontWeight: 700, color: '#f4c430' }}>{r.combined_score}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>Oracle</div>
-                    <div style={{ fontWeight: 600 }}>{r.oracle_score.toFixed(0)}</div>
+                    <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>SM Score</div>
+                    <div style={{ fontWeight: 600 }}>{r.sm_score.toFixed(0)}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>SM 10D</div>
@@ -257,8 +258,9 @@ export default function ScreenerClient() {
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {data.tidur.map((r, i) => {
-              const phase = r.markup_phase;
+            {data.tidur.map((r) => {
+              const STRENGTH_EMOJI: Record<string, string> = { SEDANG: '🟡', LEMAH: '🔵', EARLY: '⚙️' };
+              const strengthEmoji = STRENGTH_EMOJI[r.signal_strength] ?? '🔵';
               return (
                 <div
                   key={r.ticker}
@@ -271,7 +273,7 @@ export default function ScreenerClient() {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <span style={{ fontSize: '1.1rem' }}>{PHASE_EMOJI[phase] ?? '🔵'}</span>
+                  <span style={{ fontSize: '1.1rem' }}>{strengthEmoji}</span>
                   <button
                     onClick={() => handleAnalyze(r.ticker)}
                     style={{
@@ -287,20 +289,19 @@ export default function ScreenerClient() {
                     background: 'rgba(100,149,237,0.1)', border: '1px solid rgba(100,149,237,0.2)',
                     color: '#6495ed',
                   }}>
-                    {PHASE_SHORT[phase] ?? phase}
+                    {r.signal_strength}
                   </span>
+                  {r.streak >= 2 && (
+                    <span style={{ fontSize: '0.75rem', color: '#f4a261' }}>🔥 {r.streak}d</span>
+                  )}
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>Streak</div>
-                      <div style={{ fontWeight: 700, color: '#f4a261' }}>🔥 {r.streak}d</div>
+                      <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>Net 10D</div>
+                      <div style={{ fontWeight: 600, color: '#38ef7d' }}>+{r.net_value_10d.toFixed(1)}M</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>SM 10D</div>
-                      <div style={{ fontWeight: 600, color: '#38ef7d' }}>+{r.sm_10d.toFixed(1)}M</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>Oracle</div>
-                      <div style={{ fontWeight: 600 }}>{r.oracle_score.toFixed(0)}</div>
+                      <div style={{ fontSize: '0.68rem', opacity: 0.5 }}>Score</div>
+                      <div style={{ fontWeight: 600 }}>{r.combined_score}</div>
                     </div>
                   </div>
                 </div>
