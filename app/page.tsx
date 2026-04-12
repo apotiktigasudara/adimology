@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Calculator from './components/Calculator';
 import WatchlistSidebar from './components/WatchlistSidebar';
+import HealthBar from './components/HealthBar';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -19,6 +20,9 @@ function HomeContent() {
   return (
     <div className="app-layout">
       <div className="app-main">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+          <HealthBar />
+        </div>
         <Calculator selectedStock={selectedStock} />
       </div>
       <div className="app-sidebar">
