@@ -44,41 +44,47 @@ export async function GET() {
     stockbit:    { circuit_status: 'UNKNOWN' },
   };
 
-  // 1. Heartbeat — updated_at terbaru dari v4_sm_rolling
+  // 1. Heartbeat — trade_date terbaru dari v4_sm_rolling
+  // Gunakan trade_date sebagai proxy heartbeat (updated_at mungkin tidak ada)
   try {
     const { data } = await supabase
       .from('v4_sm_rolling')
-      .select('ticker, updated_at, trade_date')
-      .order('updated_at', { ascending: false })
+      .select('ticker, trade_date')
+      .order('trade_date', { ascending: false })
       .limit(1)
       .single();
 
     if (data) {
-      const lastUpdated = new Date(data.updated_at as string);
+      const tradeDate   = data.trade_date as string;
+      // Hitung lag dari trade_date ke sekarang (dalam menit)
+      const lastUpdated = new Date(tradeDate + 'T17:00:00+07:00'); // asumsi update jam 17 WIB
       const lagMs       = now.getTime() - lastUpdated.getTime();
       const lagMin      = Math.round(lagMs / 60_000);
+      // STALE jika trade_date lebih dari 3 hari kerja ke belakang (>4320 menit / 72 jam)
+      const STALE_TRADING_MIN = 4320;
 
       result.heartbeat = {
-        last_updated: data.updated_at as string,
+        last_updated: tradeDate,
         lag_min:      lagMin,
-        status:       lagMin <= STALE_MIN ? 'OK' : 'STALE',
+        status:       lagMin <= STALE_TRADING_MIN ? 'OK' : 'STALE',
       };
       result.last_signal = {
         ticker:     data.ticker as string,
-        trade_date: data.trade_date as string,
-        status:     (data.trade_date as string) === today ? 'TODAY' : 'OLD',
+        trade_date: tradeDate,
+        status:     tradeDate === today ? 'TODAY' : 'OLD',
       };
     }
   } catch { /* non-fatal */ }
 
-  // 2. SM count hari ini
+  // 2. SM count — gunakan trade_date terbaru (bukan today, karena weekend tidak ada data)
   try {
+    const lastDate = result.last_signal.trade_date ?? today;
     const { count } = await supabase
       .from('v4_sm_rolling')
       .select('ticker', { count: 'exact', head: true })
-      .eq('trade_date', today);
+      .eq('trade_date', lastDate);
 
-    result.sm_today.count = count ?? 0;
+    result.sm_today = { count: count ?? 0, date: lastDate };
   } catch { /* non-fatal */ }
 
   // Penentuan overall ok
