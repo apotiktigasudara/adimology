@@ -4,8 +4,14 @@
  * GET /api/health
  * Return status panel bot: heartbeat, last signal, sync lag, SM count hari ini.
  */
-import { NextResponse } from 'next/server';
-import { supabase }     from '@/lib/supabase';
+import { NextResponse }  from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Pakai service key agar bypass RLS — sama seperti route lain
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 interface HealthPanel {
   ok:             boolean;
