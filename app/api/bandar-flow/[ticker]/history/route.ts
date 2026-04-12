@@ -28,7 +28,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('bandar_flow')
-    .select('trade_date, sm_net_1d')
+    .select('trade_date, net_value_1d')
     .eq('ticker', symbol)
     .order('trade_date', { ascending: false })
     .limit(days);
@@ -37,12 +37,12 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Urutkan oldest→newest dan normalisasi ke miliar
+  // Urutkan oldest→newest; net_value_1d sudah dalam miliar IDR
   const sorted: SparkDay[] = (data ?? [])
     .reverse()
     .map(r => ({
       date:   r.trade_date as string,
-      sm_net: Number(((r.sm_net_1d as number) ?? 0) / 1_000_000_000),
+      sm_net: Number((r.net_value_1d as number) ?? 0),
     }));
 
   return NextResponse.json(
