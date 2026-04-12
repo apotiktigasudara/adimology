@@ -20,6 +20,8 @@ const PUBLIC_PATHS = [
   '/api/analyze-story-background',
   // Chrome extension token sync — no session cookie, must be public
   '/api/update-token',
+  // System health dashboard — read-only, no sensitive data
+  '/api/health',
 ];
 
 const CORS_HEADERS = {
