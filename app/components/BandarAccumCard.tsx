@@ -7,7 +7,9 @@
  */
 'use client';
 
-import FlowBadge from '@/app/components/FlowBadge';
+import { useState } from 'react';
+import FlowBadge     from '@/app/components/FlowBadge';
+import FlowSparkline from '@/app/components/FlowSparkline';
 import type { BandarFlow } from '@/lib/bandar-flow.types';
 import { fmtLots, fmtMiliar } from '@/lib/bandar-flow.types';
 
@@ -43,6 +45,7 @@ function fmtTime(iso: string): string {
 
 export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccumCardProps) {
   const brokers = data.top_brokers ?? [];
+  const [showChart, setShowChart] = useState(false);
 
   return (
     <div className="bf-card" data-arah={data.arah}>
@@ -50,6 +53,13 @@ export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccu
       <div className="bf-card-header">
         <span className="bf-ticker">{data.ticker}</span>
         <div className="bf-header-right">
+          <button
+            className="bf-spark-toggle"
+            onClick={() => setShowChart(v => !v)}
+            title={showChart ? 'Sembunyikan chart 30H' : 'Tampilkan chart 30H'}
+          >
+            {showChart ? '▲ chart' : '▼ chart'}
+          </button>
           <FlowBadge
             arah={data.arah}
             strength={data.signal_strength}
@@ -58,6 +68,9 @@ export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccu
           />
         </div>
       </div>
+
+      {/* ── Sparkline 30H ──────────────────────────────────── */}
+      {showChart && <FlowSparkline ticker={data.ticker} days={30} />}
 
       <div className="bf-divider" />
 

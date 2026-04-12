@@ -356,3 +356,63 @@
   align-items: center;
   gap: 0.6rem;
 }
+
+
+/* ── FlowSparkline (Task 2.3) ────────────────────────────────────────── */
+
+.fl-spark-wrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.fl-spark-svg {
+  display: block;
+  cursor: crosshair;
+}
+
+.fl-spark-loading,
+.fl-spark-empty {
+  font-size: 0.7rem;
+  color: var(--color-muted, #888);
+  padding: 0.5rem 0;
+}
+
+.fl-spark-tooltip {
+  position: absolute;
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+  font-size: 0.72rem;
+}
+
+.fl-spark-tip-date {
+  color: #aaa;
+  font-size: 0.65rem;
+  margin-bottom: 2px;
+}
+
+.fl-spark-tip-val {
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+/* Toggle sparkline expand di BandarAccumCard */
+.bf-spark-toggle {
+  background: none;
+  border: none;
+  color: var(--color-muted, #888);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.bf-spark-toggle:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.07);
+}
