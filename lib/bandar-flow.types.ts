@@ -63,6 +63,9 @@ export interface BandarFlow {
   signal_strength: 'KUAT' | 'SEDANG' | 'LEMAH' | 'EARLY';
 
   updated_at: string;
+
+  // Estimasi cost basis bandar (computed: net_value_10d / net_lots_10d)
+  cost_basis_est?: number | null;   // IDR per lembar, null jika lots <= 0
 }
 
 export interface BandarAlert {

@@ -123,6 +123,14 @@ export default function BandarAccumCard({ data, onAnalyze, onChart }: BandarAccu
               </span>
             </div>
           )}
+          {data.cost_basis_est != null && data.cost_basis_est > 0 && (
+            <div className="bf-row">
+              <span className="bf-row-label">Est. Cost Basis</span>
+              <span className="bf-row-value" style={{ color: '#f4c430', fontWeight: 600 }}>
+                Rp {data.cost_basis_est.toLocaleString('id-ID')}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

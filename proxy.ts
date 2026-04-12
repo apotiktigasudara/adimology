@@ -22,6 +22,9 @@ const PUBLIC_PATHS = [
   '/api/update-token',
   // System health dashboard — read-only, no sensitive data
   '/api/health',
+  // Screener & Whale Tracker — read-only analytics feeds
+  '/api/screener',
+  '/api/whale',
 ];
 
 const CORS_HEADERS = {

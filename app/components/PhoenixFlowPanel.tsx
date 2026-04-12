@@ -45,6 +45,13 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
   const [selectedDate, setSelectedDate] = useState<string>('');   // '' = hari ini
   const [dataDate,     setDataDate]     = useState<string>('');   // tanggal actual yang dikembalikan API
 
+  // Whale Tracker state
+  const [whaleData,    setWhaleData]    = useState<{
+    trade_date: string;
+    brokers: { code: string; name: string; ticker_count: number; total_net: number;
+               tickers: { ticker: string; net_value: number }[] }[]
+  } | null>(null);
+
   const today   = todayWIB();
   const isToday = !selectedDate || selectedDate === today;
 
@@ -80,6 +87,14 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
 
   // Initial load + refetch when deps change
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Whale Tracker — fetch sekali per load (data EOD, jarang berubah intraday)
+  useEffect(() => {
+    fetch('/api/whale')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && d.brokers?.length > 0) setWhaleData(d); })
+      .catch(() => {});
+  }, []);
 
   // Auto-refresh 60s — hanya aktif saat lihat data hari ini
   useEffect(() => {
@@ -248,6 +263,36 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
               })}
             </span>
           )}
+        </div>
+      )}
+
+      {/* ── Whale Activity Banner ───────────────────────────────────────────── */}
+      {whaleData && whaleData.brokers.length > 0 && (
+        <div style={{
+          margin: '0.75rem 0',
+          padding: '0.7rem 1rem',
+          background: 'rgba(244,196,48,0.06)',
+          border: '1px solid rgba(244,196,48,0.2)',
+          borderRadius: '10px',
+          fontSize: '0.78rem',
+        }}>
+          <div style={{ fontWeight: 600, color: '#f4c430', marginBottom: '0.4rem' }}>
+            🐋 Whale Activity — {whaleData.trade_date}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {whaleData.brokers.map(b => (
+              <span key={b.code} style={{
+                padding: '0.2rem 0.6rem', borderRadius: '6px',
+                background: 'rgba(244,196,48,0.1)', border: '1px solid rgba(244,196,48,0.2)',
+                color: '#f4c430',
+              }}
+                title={b.tickers.map(t => `${t.ticker} (+${t.net_value.toFixed(1)}M)`).join(', ')}
+              >
+                <strong>{b.name}</strong>
+                <span style={{ opacity: 0.7 }}> {b.ticker_count} ticker · +{b.total_net.toFixed(1)}M</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

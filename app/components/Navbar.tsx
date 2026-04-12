@@ -104,6 +104,20 @@ const Navbar = () => {
             >
               Flow
             </Link>
+            <Link
+              href="/screener"
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/screener' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/screener' ? 600 : 400,
+                fontSize: '0.9rem',
+                borderBottom: pathname === '/screener' ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                paddingBottom: '2px',
+                transition: 'all 0.2s'
+              }}
+            >
+              Screener
+            </Link>
             <div style={{ position: 'relative', display: 'inline-block' }} className="nav-dropdown-wrapper">
               <button
                 onClick={() => { setIsAnalitikOpen(v => !v); setIsTriggersOpen(false); }}
@@ -268,6 +282,20 @@ const Navbar = () => {
               }}
             >
               Flow
+            </Link>
+            <Link
+              href="/screener"
+              onClick={() => setIsMenuOpen(false)}
+              style={{
+                textDecoration: 'none',
+                color: pathname === '/screener' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                fontWeight: pathname === '/screener' ? 600 : 400,
+                fontSize: '1rem',
+                padding: '0.5rem 0',
+                transition: 'all 0.2s'
+              }}
+            >
+              🔭 Screener
             </Link>
             <Link
               href="/triggers"

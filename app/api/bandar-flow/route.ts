@@ -92,10 +92,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const enriched = (data ?? []).map((r: any) => ({
-      ...r,
-      nbsa_daily: nbsaMap[r.ticker] ?? 0,
-    }));
+    const enriched = (data ?? []).map((r: any) => {
+      const netLots = Number(r.net_lots_10d ?? 0);
+      const netVal  = Number(r.net_value_10d ?? 0);
+      // cost_basis_est: (miliar IDR × 1e9) / (lot × 100 lembar) = IDR/lembar
+      const costBasis = netLots > 0
+        ? Math.round((netVal * 1_000_000_000) / (netLots * 100))
+        : null;
+      return {
+        ...r,
+        nbsa_daily:     nbsaMap[r.ticker] ?? 0,
+        cost_basis_est: costBasis,
+      };
+    });
 
     return NextResponse.json({
       date,
