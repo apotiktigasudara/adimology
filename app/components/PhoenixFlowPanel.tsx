@@ -46,11 +46,12 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
   const [dataDate,     setDataDate]     = useState<string>('');   // tanggal actual yang dikembalikan API
 
   // Whale Tracker state
-  const [whaleData,    setWhaleData]    = useState<{
+  const [whaleData,      setWhaleData]      = useState<{
     trade_date: string;
     brokers: { code: string; name: string; ticker_count: number; total_net: number;
                tickers: { ticker: string; net_value: number }[] }[]
   } | null>(null);
+  const [expandedWhale, setExpandedWhale] = useState<string | null>(null);
 
   const today   = todayWIB();
   const isToday = !selectedDate || selectedDate === today;
@@ -279,19 +280,56 @@ export default function PhoenixFlowPanel({ onAnalyze }: PhoenixFlowPanelProps = 
           <div style={{ fontWeight: 600, color: '#f4c430', marginBottom: '0.4rem' }}>
             🐋 Whale Activity — {whaleData.trade_date}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {whaleData.brokers.map(b => (
-              <span key={b.code} style={{
-                padding: '0.2rem 0.6rem', borderRadius: '6px',
-                background: 'rgba(244,196,48,0.1)', border: '1px solid rgba(244,196,48,0.2)',
-                color: '#f4c430',
-              }}
-                title={b.tickers.map(t => `${t.ticker} (+${t.net_value.toFixed(1)}M)`).join(', ')}
-              >
-                <strong>{b.name}</strong>
-                <span style={{ opacity: 0.7 }}> {b.ticker_count} ticker · +{b.total_net.toFixed(1)}M</span>
-              </span>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {whaleData.brokers.map(b => (
+                <button
+                  key={b.code}
+                  onClick={() => setExpandedWhale(expandedWhale === b.code ? null : b.code)}
+                  style={{
+                    padding: '0.2rem 0.6rem', borderRadius: '6px', cursor: 'pointer',
+                    background: expandedWhale === b.code ? 'rgba(244,196,48,0.2)' : 'rgba(244,196,48,0.1)',
+                    border: `1px solid ${expandedWhale === b.code ? 'rgba(244,196,48,0.5)' : 'rgba(244,196,48,0.2)'}`,
+                    color: '#f4c430', fontSize: '0.78rem',
+                  }}
+                >
+                  <strong>{b.name}</strong>
+                  <span style={{ opacity: 0.7 }}> {b.ticker_count} ticker · +{b.total_net.toFixed(1)}M</span>
+                  <span style={{ marginLeft: '0.3rem', opacity: 0.5 }}>{expandedWhale === b.code ? '▴' : '▾'}</span>
+                </button>
+              ))}
+            </div>
+            {expandedWhale && (() => {
+              const broker = whaleData.brokers.find(b => b.code === expandedWhale);
+              if (!broker) return null;
+              return (
+                <div style={{
+                  padding: '0.5rem 0.75rem',
+                  background: 'rgba(244,196,48,0.05)',
+                  border: '1px solid rgba(244,196,48,0.15)',
+                  borderRadius: '8px',
+                  display: 'flex', flexWrap: 'wrap', gap: '0.4rem',
+                }}>
+                  {broker.tickers.map(t => (
+                    <button
+                      key={t.ticker}
+                      onClick={() => onAnalyze?.(t.ticker)}
+                      style={{
+                        padding: '0.15rem 0.5rem', borderRadius: '5px', cursor: 'pointer',
+                        background: 'rgba(244,196,48,0.1)', border: '1px solid rgba(244,196,48,0.2)',
+                        color: '#f4c430', fontSize: '0.72rem', fontWeight: 600,
+                      }}
+                      title={`+${t.net_value.toFixed(1)}M`}
+                    >
+                      {t.ticker}
+                      <span style={{ fontWeight: 400, opacity: 0.65, marginLeft: '0.25rem' }}>
+                        +{t.net_value.toFixed(0)}M
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
